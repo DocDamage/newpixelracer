@@ -238,6 +238,17 @@ for expected in (
     "UDataAssetFactory",
     "CreateOrUpdateVehicleDefinition",
     "ApplyVehicleDefinitionMetadata",
+    "GeneratedInventoryKey",
+    "BuildExpectedGeneratedAssets",
+    "PruneStaleGeneratedAssets",
+    "IsExpectedGeneratedLocation",
+    "GeneratedSourceKey",
+    "GeneratedKindKey",
+    "FindOtherDirtyPackage",
+    "ObjectTools::DeleteAssets",
+    "FReferencerFinder::GetAllReferencers",
+    "WaitForCompletion",
+    "GeneratedOwnerKey",
     "StarterDisplayName",
     "Definition.Stats.Speed",
     "VehicleDefinitionObjectPath",
@@ -245,6 +256,17 @@ for expected in (
 ):
     if expected not in asset_browser_cpp:
         ERRORS.append(f"Asset Browser must persist imported vehicle definitions and directional sprites: {expected}")
+if "ForceDeleteObjects" in asset_browser_cpp or "DeleteObjectsUnchecked" in asset_browser_cpp:
+    ERRORS.append("Importer cleanup must use reference-aware editor deletion rather than force deletion")
+pie_guard_offset = asset_browser_cpp.find("GEditor->PlayWorld != nullptr")
+delete_offset = asset_browser_cpp.find("ObjectTools::DeleteAssets")
+if pie_guard_offset < 0 or delete_offset < 0 or pie_guard_offset > delete_offset:
+    ERRORS.append("Generated asset cleanup must be disabled during PIE before deleting stale assets")
+import_function_offset = asset_browser_cpp.find("static bool ImportPixelArtAssets")
+partial_import_stop_offset = asset_browser_cpp.find("if (!bGeneratedAssets)", import_function_offset)
+cleanup_finalizer_call_offset = asset_browser_cpp.find("return FinalizeGeneratedAssetImport(", import_function_offset)
+if import_function_offset < 0 or partial_import_stop_offset < 0 or cleanup_finalizer_call_offset < 0 or partial_import_stop_offset > cleanup_finalizer_call_offset:
+    ERRORS.append("Partial imports must stop before generated-asset cleanup and inventory updates")
 for expected in ("ApplyVehicleAssetSelection", "VehicleDefinitionObjectPath", "VehicleDefinitionNeedsImport"):
     if expected not in editor_module_cpp:
         ERRORS.append(f"Track Editor must select and preflight the imported vehicle definition: {expected}")
@@ -281,7 +303,8 @@ for expected in (
     "frameColumns",
     "frameRows",
     "frameCount",
-    "Partial import:",
+    "Asset generation stopped after saving texture",
+    "ownership inventory could not be saved",
 ):
     if expected not in asset_browser_cpp:
         ERRORS.append(f"Pixel-art import guardrail missing from Asset Browser: {expected}")

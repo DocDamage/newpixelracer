@@ -24,6 +24,7 @@ public class PixelRacerTrackEditor : ModuleRules
             "Projects",
             "ContentBrowser",
             "AssetTools",
+            "AssetRegistry",
             "InputCore",
             "Json",
             "Paper2D",

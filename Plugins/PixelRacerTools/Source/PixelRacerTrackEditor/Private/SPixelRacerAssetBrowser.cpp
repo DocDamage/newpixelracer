@@ -1,13 +1,16 @@
 #include "SPixelRacerAssetBrowser.h"
 
 #include "AssetImportTask.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetToolsModule.h"
 #include "Brushes/SlateDynamicImageBrush.h"
 #include "Containers/StringConv.h"
 #include "Dom/JsonObject.h"
+#include "Editor.h"
 #include "Factories/DataAssetFactory.h"
 #include "Factories/TextureFactory.h"
 #include "HAL/FileManager.h"
+#include "HAL/PlatformFileManager.h"
 #include "Interfaces/IPluginManager.h"
 #include "InputCoreTypes.h"
 #include "Modules/ModuleManager.h"
@@ -26,7 +29,10 @@
 #include "Serialization/JsonSerializer.h"
 #include "Styling/AppStyle.h"
 #include "UObject/Package.h"
+#include "UObject/MetaData.h"
+#include "UObject/ReferencerFinder.h"
 #include "UObject/SavePackage.h"
+#include "UObject/UObjectIterator.h"
 #include "UObject/UnrealType.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
@@ -41,6 +47,30 @@
 
 namespace PixelRacerAssetBrowser
 {
+    static bool SaveImportedAsset(UObject* Asset, FString& OutError);
+
+    static constexpr int32 GeneratedInventoryVersion = 1;
+    static constexpr TCHAR GeneratedOwnerKey[] = TEXT("PixelRacer.GeneratedOwner");
+    static constexpr TCHAR GeneratedSourceKey[] = TEXT("PixelRacer.GeneratedSource");
+    static constexpr TCHAR GeneratedKindKey[] = TEXT("PixelRacer.GeneratedKind");
+    static constexpr TCHAR GeneratedVersionKey[] = TEXT("PixelRacer.GeneratedVersion");
+    static constexpr TCHAR GeneratedInventoryKey[] = TEXT("PixelRacer.GeneratedInventory");
+    static constexpr TCHAR GeneratedOwnerName[] = TEXT("PixelRacerAssetBrowser");
+
+    struct FGeneratedAssetRecord
+    {
+        FString ObjectPath;
+        FString Kind;
+        FString PendingReason;
+    };
+
+    enum class EGeneratedInventoryState : uint8
+    {
+        Missing,
+        Valid,
+        Invalid
+    };
+
     static FString MakeSafeAssetName(const FString& SourceName)
     {
         FString SafeName = ObjectTools::SanitizeObjectName(SourceName);
@@ -98,6 +128,209 @@ namespace PixelRacerAssetBrowser
         FString VehicleDefinitionObjectPath;
     };
 
+    static void ApplyGeneratedAssetOwnership(UObject* Asset, const FString& SourceIdentity, const FString& Kind)
+    {
+        if (Asset == nullptr || !IsValid(Asset->GetOutermost()))
+        {
+            return;
+        }
+
+        FMetaData& Metadata = Asset->GetOutermost()->GetMetaData();
+        Metadata.SetValue(Asset, GeneratedOwnerKey, GeneratedOwnerName);
+        Metadata.SetValue(Asset, GeneratedSourceKey, *SourceIdentity);
+        Metadata.SetValue(Asset, GeneratedKindKey, *Kind);
+        Metadata.SetValue(Asset, GeneratedVersionKey, TEXT("1"));
+        Asset->MarkPackageDirty();
+    }
+
+    static void AddGeneratedAssetRecord(
+        TArray<FGeneratedAssetRecord>& InOutRecords,
+        const FString& ObjectPath,
+        const TCHAR* Kind)
+    {
+        FGeneratedAssetRecord& Record = InOutRecords.AddDefaulted_GetRef();
+        Record.ObjectPath = ObjectPath;
+        Record.Kind = Kind;
+    }
+
+    static FString BuildGeneratedObjectPath(const FString& PackagePath, const FString& AssetName)
+    {
+        return FString::Printf(TEXT("%s/%s.%s"), *PackagePath, *AssetName, *AssetName);
+    }
+
+    static TArray<FGeneratedAssetRecord> BuildExpectedGeneratedAssets(
+        const FPixelRacerAssetBrowserItem& Item,
+        const FImportedAssetPaths& ImportedPaths)
+    {
+        TArray<FGeneratedAssetRecord> Records;
+        AddGeneratedAssetRecord(Records, ImportedPaths.TextureObjectPath, TEXT("SourceTexture"));
+
+        if (Item.Role == TEXT("tileset"))
+        {
+            AddGeneratedAssetRecord(
+                Records,
+                BuildGeneratedObjectPath(ImportedPaths.PackagePath, ImportedPaths.AssetName + TEXT("_TileSet")),
+                TEXT("TileSet"));
+        }
+        else if (Item.Role == TEXT("vehicle_sprite_sheet"))
+        {
+            for (int32 DirectionIndex = 0; DirectionIndex < Item.DirectionCount; ++DirectionIndex)
+            {
+                const FString SpriteName = FString::Printf(TEXT("%s_Direction_%02d"), *ImportedPaths.AssetName, DirectionIndex);
+                AddGeneratedAssetRecord(
+                    Records,
+                    BuildGeneratedObjectPath(ImportedPaths.PackagePath, SpriteName),
+                    TEXT("VehicleDirectionSprite"));
+            }
+            AddGeneratedAssetRecord(
+                Records,
+                BuildGeneratedObjectPath(ImportedPaths.PackagePath, ImportedPaths.AssetName + TEXT("_Vehicle")),
+                TEXT("VehicleDefinition"));
+        }
+        else if (Item.Role == TEXT("vfx_sheet"))
+        {
+            for (int32 FrameIndex = 0; FrameIndex < Item.FrameCount; ++FrameIndex)
+            {
+                const FString SpriteName = FString::Printf(TEXT("%s_Frame_%03d"), *ImportedPaths.AssetName, FrameIndex);
+                AddGeneratedAssetRecord(
+                    Records,
+                    BuildGeneratedObjectPath(ImportedPaths.PackagePath, SpriteName),
+                    TEXT("VfxFrameSprite"));
+            }
+        }
+        else if (Item.Role == TEXT("environment_piece") || Item.Role == TEXT("sprite"))
+        {
+            AddGeneratedAssetRecord(
+                Records,
+                BuildGeneratedObjectPath(ImportedPaths.PackagePath, ImportedPaths.AssetName + TEXT("_Sprite")),
+                TEXT("EnvironmentSprite"));
+        }
+
+        return Records;
+    }
+
+    static EGeneratedInventoryState ReadGeneratedAssetInventory(
+        UTexture2D* SourceTexture,
+        const FString& ExpectedSourceIdentity,
+        TArray<FGeneratedAssetRecord>& OutRecords,
+        FString& OutError)
+    {
+        OutRecords.Reset();
+        if (SourceTexture == nullptr)
+        {
+            return EGeneratedInventoryState::Missing;
+        }
+
+        FMetaData& Metadata = SourceTexture->GetOutermost()->GetMetaData();
+        const FString* Owner = Metadata.FindValue(SourceTexture, GeneratedOwnerKey);
+        const FString* SourceIdentity = Metadata.FindValue(SourceTexture, GeneratedSourceKey);
+        const FString* Version = Metadata.FindValue(SourceTexture, GeneratedVersionKey);
+        const FString* SerializedInventory = Metadata.FindValue(SourceTexture, GeneratedInventoryKey);
+        const bool bAnyInventoryMetadata = Owner != nullptr || SourceIdentity != nullptr || Version != nullptr || SerializedInventory != nullptr;
+        if (!bAnyInventoryMetadata)
+        {
+            return EGeneratedInventoryState::Missing;
+        }
+        if (Owner == nullptr || SourceIdentity == nullptr || Version == nullptr || SerializedInventory == nullptr ||
+            *Owner != GeneratedOwnerName || *SourceIdentity != ExpectedSourceIdentity || *Version != TEXT("1"))
+        {
+            OutError = TEXT("The source texture has missing, conflicting, or unsupported generated-asset ownership metadata.");
+            return EGeneratedInventoryState::Invalid;
+        }
+
+        TSharedPtr<FJsonObject> Root;
+        const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(*SerializedInventory);
+        if (!FJsonSerializer::Deserialize(Reader, Root) || !Root.IsValid())
+        {
+            OutError = TEXT("The source texture's generated-asset inventory is unreadable.");
+            return EGeneratedInventoryState::Invalid;
+        }
+
+        double StoredVersion = 0.0;
+        FString StoredOwner;
+        FString StoredIdentity;
+        const TArray<TSharedPtr<FJsonValue>>* JsonRecords = nullptr;
+        if (!Root->TryGetNumberField(TEXT("version"), StoredVersion) || StoredVersion != GeneratedInventoryVersion ||
+            !Root->TryGetStringField(TEXT("owner"), StoredOwner) || StoredOwner != GeneratedOwnerName ||
+            !Root->TryGetStringField(TEXT("sourceIdentity"), StoredIdentity) || StoredIdentity != ExpectedSourceIdentity ||
+            !Root->TryGetArrayField(TEXT("outputs"), JsonRecords) || JsonRecords == nullptr)
+        {
+            OutError = TEXT("The source texture's generated-asset inventory does not match this source or importer version.");
+            return EGeneratedInventoryState::Invalid;
+        }
+
+        TSet<FString> SeenObjectPaths;
+        for (const TSharedPtr<FJsonValue>& JsonValue : *JsonRecords)
+        {
+            if (!JsonValue.IsValid() || JsonValue->Type != EJson::Object)
+            {
+                OutError = TEXT("The source texture's generated-asset inventory contains an invalid record.");
+                OutRecords.Reset();
+                return EGeneratedInventoryState::Invalid;
+            }
+
+            const TSharedPtr<FJsonObject> JsonRecord = JsonValue->AsObject();
+            FGeneratedAssetRecord& Record = OutRecords.AddDefaulted_GetRef();
+            if (!JsonRecord->TryGetStringField(TEXT("objectPath"), Record.ObjectPath) || Record.ObjectPath.IsEmpty() ||
+                !JsonRecord->TryGetStringField(TEXT("kind"), Record.Kind) || Record.Kind.IsEmpty() ||
+                !JsonRecord->TryGetStringField(TEXT("pendingReason"), Record.PendingReason) ||
+                SeenObjectPaths.Contains(Record.ObjectPath))
+            {
+                OutError = TEXT("The source texture's generated-asset inventory contains an incomplete or duplicate record.");
+                OutRecords.Reset();
+                return EGeneratedInventoryState::Invalid;
+            }
+            SeenObjectPaths.Add(Record.ObjectPath);
+        }
+
+        return EGeneratedInventoryState::Valid;
+    }
+
+    static bool SaveGeneratedAssetInventory(
+        UTexture2D* SourceTexture,
+        const FString& SourceIdentity,
+        const TArray<FGeneratedAssetRecord>& Records,
+        FString& OutError)
+    {
+        if (SourceTexture == nullptr)
+        {
+            OutError = TEXT("Cannot store generated-asset ownership without the imported source texture.");
+            return false;
+        }
+
+        TArray<TSharedPtr<FJsonValue>> JsonRecords;
+        JsonRecords.Reserve(Records.Num());
+        for (const FGeneratedAssetRecord& Record : Records)
+        {
+            TSharedPtr<FJsonObject> JsonRecord = MakeShared<FJsonObject>();
+            JsonRecord->SetStringField(TEXT("objectPath"), Record.ObjectPath);
+            JsonRecord->SetStringField(TEXT("kind"), Record.Kind);
+            JsonRecord->SetStringField(TEXT("pendingReason"), Record.PendingReason);
+            JsonRecords.Add(MakeShared<FJsonValueObject>(JsonRecord));
+        }
+
+        TSharedPtr<FJsonObject> Root = MakeShared<FJsonObject>();
+        Root->SetNumberField(TEXT("version"), GeneratedInventoryVersion);
+        Root->SetStringField(TEXT("owner"), GeneratedOwnerName);
+        Root->SetStringField(TEXT("sourceIdentity"), SourceIdentity);
+        Root->SetArrayField(TEXT("outputs"), JsonRecords);
+        FString SerializedInventory;
+        const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&SerializedInventory);
+        if (!FJsonSerializer::Serialize(Root.ToSharedRef(), Writer))
+        {
+            OutError = TEXT("Could not serialize the generated-asset inventory.");
+            return false;
+        }
+
+        FMetaData& Metadata = SourceTexture->GetOutermost()->GetMetaData();
+        Metadata.SetValue(SourceTexture, GeneratedOwnerKey, GeneratedOwnerName);
+        Metadata.SetValue(SourceTexture, GeneratedSourceKey, *SourceIdentity);
+        Metadata.SetValue(SourceTexture, GeneratedVersionKey, TEXT("1"));
+        Metadata.SetValue(SourceTexture, GeneratedInventoryKey, *SerializedInventory);
+        SourceTexture->MarkPackageDirty();
+        return SaveImportedAsset(SourceTexture, OutError);
+    }
+
     static bool BuildImportedAssetPaths(
         const FPixelRacerAssetBrowserItem& Item,
         FImportedAssetPaths& OutPaths,
@@ -136,7 +369,7 @@ namespace PixelRacerAssetBrowser
             return false;
         }
 
-        OutPaths.TextureObjectPath = FString::Printf(TEXT("%s.%s"), *OutPaths.PackagePath, *OutPaths.AssetName);
+        OutPaths.TextureObjectPath = FString::Printf(TEXT("%s/%s.%s"), *OutPaths.PackagePath, *OutPaths.AssetName, *OutPaths.AssetName);
         const FString SpriteName = OutPaths.AssetName + TEXT("_Sprite");
         const FString TileSetName = OutPaths.AssetName + TEXT("_TileSet");
         OutPaths.SpriteObjectPath = FString::Printf(TEXT("%s/%s.%s"), *OutPaths.PackagePath, *SpriteName, *SpriteName);
@@ -294,6 +527,400 @@ namespace PixelRacerAssetBrowser
         return true;
     }
 
+    static UClass* GetGeneratedAssetClass(const FString& Kind)
+    {
+        if (Kind == TEXT("SourceTexture")) return UTexture2D::StaticClass();
+        if (Kind == TEXT("TileSet")) return UPaperTileSet::StaticClass();
+        if (Kind == TEXT("VehicleDefinition")) return UPixelRacerVehicleDefinition::StaticClass();
+        if (Kind == TEXT("VehicleDirectionSprite") || Kind == TEXT("VfxFrameSprite") || Kind == TEXT("EnvironmentSprite"))
+        {
+            return UPaperSprite::StaticClass();
+        }
+        return nullptr;
+    }
+
+    static bool HasOnlyDigits(const FString& Value)
+    {
+        if (Value.IsEmpty())
+        {
+            return false;
+        }
+        for (const TCHAR Character : Value)
+        {
+            if (!FChar::IsDigit(Character))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    static bool IsExpectedGeneratedLocation(
+        const FGeneratedAssetRecord& Record,
+        const FString& PackagePath,
+        const FString& AssetName)
+    {
+        const FSoftObjectPath ObjectPath(Record.ObjectPath);
+        if (!ObjectPath.IsValid() ||
+            ObjectPath.ToString() != FString::Printf(TEXT("%s.%s"), *ObjectPath.GetLongPackageName(), *ObjectPath.GetAssetName()) ||
+            ObjectPath.GetLongPackageName() != FPaths::Combine(PackagePath, ObjectPath.GetAssetName()))
+        {
+            return false;
+        }
+
+        const FString ObjectName = ObjectPath.GetAssetName();
+        if (Record.Kind == TEXT("VehicleDirectionSprite"))
+        {
+            const FString Prefix = AssetName + TEXT("_Direction_");
+            return ObjectName.StartsWith(Prefix, ESearchCase::CaseSensitive) &&
+                HasOnlyDigits(ObjectName.RightChop(Prefix.Len()));
+        }
+        if (Record.Kind == TEXT("VfxFrameSprite"))
+        {
+            const FString Prefix = AssetName + TEXT("_Frame_");
+            return ObjectName.StartsWith(Prefix, ESearchCase::CaseSensitive) &&
+                HasOnlyDigits(ObjectName.RightChop(Prefix.Len()));
+        }
+        if (Record.Kind == TEXT("TileSet")) return ObjectName == AssetName + TEXT("_TileSet");
+        if (Record.Kind == TEXT("VehicleDefinition")) return ObjectName == AssetName + TEXT("_Vehicle");
+        if (Record.Kind == TEXT("EnvironmentSprite")) return ObjectName == AssetName + TEXT("_Sprite");
+        return false;
+    }
+
+    static FString FindOtherDirtyPackage(const TSet<FString>& InvolvedPackages)
+    {
+        for (TObjectIterator<UPackage> It; It; ++It)
+        {
+            UPackage* Package = *It;
+            if (Package == nullptr || Package->HasAnyFlags(RF_Transient) || !Package->IsDirty())
+            {
+                continue;
+            }
+            const FString PackageName = Package->GetName();
+            if (!InvolvedPackages.Contains(PackageName))
+            {
+                return PackageName;
+            }
+        }
+        return FString();
+    }
+
+    static bool HasSavedOrLoadedReferencers(
+        UObject* Asset,
+        IAssetRegistry& AssetRegistry,
+        FString& OutReason)
+    {
+        if (Asset == nullptr || Asset->GetOutermost() == nullptr)
+        {
+            OutReason = TEXT("The generated asset could not be loaded for reference checking.");
+            return true;
+        }
+
+        const FString PackageName = Asset->GetOutermost()->GetName();
+        TArray<FName> SavedReferencers;
+        AssetRegistry.GetReferencers(FName(*PackageName), SavedReferencers, UE::AssetRegistry::EDependencyCategory::Package);
+        if (!SavedReferencers.IsEmpty())
+        {
+            OutReason = FString::Printf(TEXT("A saved package references it (%s)."), *SavedReferencers[0].ToString());
+            return true;
+        }
+
+        TArray<UObject*> Referencees;
+        Referencees.Add(Asset);
+        const TArray<UObject*> LoadedReferencers = FReferencerFinder::GetAllReferencers(
+            Referencees,
+            nullptr,
+            EReferencerFinderFlags::SkipWeakReferences);
+        for (const UObject* Referencer : LoadedReferencers)
+        {
+            if (Referencer == nullptr || Referencer->GetOutermost() == Asset->GetOutermost())
+            {
+                continue;
+            }
+            OutReason = FString::Printf(
+                TEXT("A loaded object references it (%s)."),
+                *Referencer->GetPathName());
+            return true;
+        }
+
+        return false;
+    }
+
+    static bool LooksLikeGeneratedOutputName(const FString& AssetName, const FString& SourceAssetName)
+    {
+        if (AssetName == SourceAssetName + TEXT("_TileSet") ||
+            AssetName == SourceAssetName + TEXT("_Vehicle") ||
+            AssetName == SourceAssetName + TEXT("_Sprite"))
+        {
+            return true;
+        }
+        const FString DirectionPrefix = SourceAssetName + TEXT("_Direction_");
+        const FString FramePrefix = SourceAssetName + TEXT("_Frame_");
+        return (AssetName.StartsWith(DirectionPrefix, ESearchCase::CaseSensitive) &&
+                HasOnlyDigits(AssetName.RightChop(DirectionPrefix.Len()))) ||
+            (AssetName.StartsWith(FramePrefix, ESearchCase::CaseSensitive) &&
+                HasOnlyDigits(AssetName.RightChop(FramePrefix.Len())));
+    }
+
+    static void FindUntrackedGeneratedLookingAssets(
+        IAssetRegistry& AssetRegistry,
+        const FString& PackagePath,
+        const FString& AssetName,
+        const TArray<FGeneratedAssetRecord>& KnownRecords,
+        TArray<FString>& OutObjectPaths)
+    {
+        TSet<FString> KnownPaths;
+        for (const FGeneratedAssetRecord& Record : KnownRecords)
+        {
+            KnownPaths.Add(Record.ObjectPath);
+        }
+
+        TArray<FAssetData> AssetsInFolder;
+        AssetRegistry.GetAssetsByPath(FName(*PackagePath), AssetsInFolder, false, false);
+        for (const FAssetData& AssetData : AssetsInFolder)
+        {
+            const FString ObjectPath = AssetData.GetSoftObjectPath().ToString();
+            const FString ExistingName = AssetData.AssetName.ToString();
+            const FString PackageFilename = FPackageName::LongPackageNameToFilename(
+                AssetData.GetSoftObjectPath().GetLongPackageName(),
+                FPackageName::GetAssetPackageExtension());
+            if (FPaths::FileExists(PackageFilename) && !KnownPaths.Contains(ObjectPath) &&
+                LooksLikeGeneratedOutputName(ExistingName, AssetName))
+            {
+                OutObjectPaths.Add(ObjectPath);
+            }
+        }
+    }
+
+    static FString SummarizeReviewItems(const TArray<FString>& Items)
+    {
+        TArray<FString> Samples;
+        const int32 SampleCount = FMath::Min(Items.Num(), 3);
+        for (int32 Index = 0; Index < SampleCount; ++Index)
+        {
+            Samples.Add(Items[Index]);
+        }
+        FString Summary = FString::Join(Samples, TEXT("; "));
+        if (Items.Num() > SampleCount)
+        {
+            Summary += FString::Printf(TEXT("; and %d more"), Items.Num() - SampleCount);
+        }
+        return Summary;
+    }
+
+    static void MergeGeneratedAssetRecords(
+        const TArray<FGeneratedAssetRecord>& PreviousRecords,
+        const TArray<FGeneratedAssetRecord>& ExpectedRecords,
+        TArray<FGeneratedAssetRecord>& OutMergedRecords,
+        TArray<FGeneratedAssetRecord>& OutStaleRecords)
+    {
+        TSet<FString> ExpectedPaths;
+        OutMergedRecords = ExpectedRecords;
+        for (const FGeneratedAssetRecord& Expected : ExpectedRecords)
+        {
+            ExpectedPaths.Add(Expected.ObjectPath);
+        }
+        for (const FGeneratedAssetRecord& Previous : PreviousRecords)
+        {
+            if (!ExpectedPaths.Contains(Previous.ObjectPath))
+            {
+                OutMergedRecords.Add(Previous);
+                OutStaleRecords.Add(Previous);
+            }
+        }
+    }
+
+    static bool SaveMergedInventoryBeforePruning(
+        UTexture2D* SourceTexture,
+        const FString& SourceIdentity,
+        const TArray<FGeneratedAssetRecord>& MergedRecords,
+        FString& OutError)
+    {
+        ApplyGeneratedAssetOwnership(SourceTexture, SourceIdentity, TEXT("SourceTexture"));
+        return SaveGeneratedAssetInventory(SourceTexture, SourceIdentity, MergedRecords, OutError);
+    }
+
+    static bool PruneStaleGeneratedAssets(
+        IAssetRegistry& AssetRegistry,
+        const FImportedAssetPaths& ImportedPaths,
+        const FString& SourceIdentity,
+        const TArray<FGeneratedAssetRecord>& StaleRecords,
+        const TArray<FGeneratedAssetRecord>& ExpectedRecords,
+        TArray<FGeneratedAssetRecord>& InOutInventoryRecords,
+        int32& OutDeletedCount,
+        int32& OutRetainedCount)
+    {
+        OutDeletedCount = 0;
+        OutRetainedCount = 0;
+        if (StaleRecords.IsEmpty())
+        {
+            return true;
+        }
+
+        TSet<FString> InvolvedPackages;
+        for (const FGeneratedAssetRecord& Record : ExpectedRecords)
+        {
+            InvolvedPackages.Add(FSoftObjectPath(Record.ObjectPath).GetLongPackageName());
+        }
+        for (const FGeneratedAssetRecord& Record : StaleRecords)
+        {
+            InvolvedPackages.Add(FSoftObjectPath(Record.ObjectPath).GetLongPackageName());
+        }
+
+        FString GlobalRetentionReason;
+        if (GEditor == nullptr)
+        {
+            GlobalRetentionReason = TEXT("The editor is unavailable, so cleanup was deferred.");
+        }
+        else if (GEditor->PlayWorld != nullptr)
+        {
+            GlobalRetentionReason = TEXT("A PIE or simulation world is active, so cleanup was deferred.");
+        }
+        else if (const FString DirtyPackage = FindOtherDirtyPackage(InvolvedPackages); !DirtyPackage.IsEmpty())
+        {
+            GlobalRetentionReason = FString::Printf(
+                TEXT("Another package has unsaved changes (%s); cleanup was deferred to protect possible unsaved references."),
+                *DirtyPackage);
+        }
+
+        TArray<FAssetData> AssetsToDelete;
+        TArray<FGeneratedAssetRecord> DeleteRecords;
+        TArray<FString> AlreadyMissingPaths;
+        for (FGeneratedAssetRecord& StaleRecord : InOutInventoryRecords)
+        {
+            if (ExpectedRecords.ContainsByPredicate([&StaleRecord](const FGeneratedAssetRecord& Expected)
+                { return Expected.ObjectPath == StaleRecord.ObjectPath; }))
+            {
+                continue;
+            }
+
+            if (!GlobalRetentionReason.IsEmpty())
+            {
+                StaleRecord.PendingReason = GlobalRetentionReason;
+                ++OutRetainedCount;
+                continue;
+            }
+
+            if (StaleRecord.Kind == TEXT("SourceTexture") ||
+                GetGeneratedAssetClass(StaleRecord.Kind) == nullptr ||
+                !IsExpectedGeneratedLocation(StaleRecord, ImportedPaths.PackagePath, ImportedPaths.AssetName))
+            {
+                StaleRecord.PendingReason = TEXT("The inventory entry is not a recognized generated asset at this source's exact output path.");
+                ++OutRetainedCount;
+                continue;
+            }
+
+            const FSoftObjectPath SoftObjectPath(StaleRecord.ObjectPath);
+            FAssetData AssetData = AssetRegistry.GetAssetByObjectPath(SoftObjectPath, false);
+            if (!AssetData.IsValid())
+            {
+                const FString PackageFilename = FPackageName::LongPackageNameToFilename(
+                    SoftObjectPath.GetLongPackageName(),
+                    FPackageName::GetAssetPackageExtension());
+                if (!FPaths::FileExists(PackageFilename))
+                {
+                    AlreadyMissingPaths.Add(StaleRecord.ObjectPath);
+                    continue;
+                }
+                StaleRecord.PendingReason = TEXT("The asset registry could not resolve this inventory entry; it was retained for review.");
+                ++OutRetainedCount;
+                continue;
+            }
+
+            UObject* Asset = AssetData.GetAsset();
+            UClass* ExpectedClass = GetGeneratedAssetClass(StaleRecord.Kind);
+            if (Asset == nullptr || Asset->GetClass() != ExpectedClass ||
+                Asset->GetOutermost()->GetName() != SoftObjectPath.GetLongPackageName() ||
+                Asset->GetName() != SoftObjectPath.GetAssetName())
+            {
+                StaleRecord.PendingReason = TEXT("The existing object does not match the recorded class and exact object path.");
+                ++OutRetainedCount;
+                continue;
+            }
+
+            FMetaData& Metadata = Asset->GetOutermost()->GetMetaData();
+            const FString* Owner = Metadata.FindValue(Asset, GeneratedOwnerKey);
+            const FString* OwnerSource = Metadata.FindValue(Asset, GeneratedSourceKey);
+            const FString* OwnerKind = Metadata.FindValue(Asset, GeneratedKindKey);
+            const FString* OwnerVersion = Metadata.FindValue(Asset, GeneratedVersionKey);
+            if (Owner == nullptr || OwnerSource == nullptr || OwnerKind == nullptr || OwnerVersion == nullptr ||
+                *Owner != GeneratedOwnerName || *OwnerSource != SourceIdentity ||
+                *OwnerKind != StaleRecord.Kind || *OwnerVersion != TEXT("1"))
+            {
+                StaleRecord.PendingReason = TEXT("Ownership metadata is missing or differs from the source inventory; it was retained.");
+                ++OutRetainedCount;
+                continue;
+            }
+
+            if (Asset->GetOutermost()->IsDirty())
+            {
+                StaleRecord.PendingReason = TEXT("The generated asset has unsaved changes; it was retained.");
+                ++OutRetainedCount;
+                continue;
+            }
+
+            const FString PackageFilename = FPackageName::LongPackageNameToFilename(
+                SoftObjectPath.GetLongPackageName(),
+                FPackageName::GetAssetPackageExtension());
+            if (!FPaths::FileExists(PackageFilename) || IFileManager::Get().IsReadOnly(*PackageFilename))
+            {
+                StaleRecord.PendingReason = TEXT("The generated asset file is missing or read-only; cleanup was deferred.");
+                ++OutRetainedCount;
+                continue;
+            }
+
+            FString ReferenceReason;
+            if (HasSavedOrLoadedReferencers(Asset, AssetRegistry, ReferenceReason))
+            {
+                StaleRecord.PendingReason = MoveTemp(ReferenceReason);
+                ++OutRetainedCount;
+                continue;
+            }
+
+            StaleRecord.PendingReason.Reset();
+            AssetsToDelete.Add(AssetData);
+            DeleteRecords.Add(StaleRecord);
+        }
+
+        if (!AlreadyMissingPaths.IsEmpty())
+        {
+            InOutInventoryRecords.RemoveAll([&AlreadyMissingPaths](const FGeneratedAssetRecord& Record)
+                { return AlreadyMissingPaths.Contains(Record.ObjectPath); });
+        }
+
+        if (!AssetsToDelete.IsEmpty())
+        {
+            ObjectTools::DeleteAssets(AssetsToDelete, true);
+            for (const FGeneratedAssetRecord& DeletedRecord : DeleteRecords)
+            {
+                const FSoftObjectPath DeletedPath(DeletedRecord.ObjectPath);
+                const FString PackageFilename = FPackageName::LongPackageNameToFilename(
+                    DeletedPath.GetLongPackageName(),
+                    FPackageName::GetAssetPackageExtension());
+                if (!FPaths::FileExists(PackageFilename))
+                {
+                    ++OutDeletedCount;
+                    InOutInventoryRecords.RemoveAll([&DeletedRecord](const FGeneratedAssetRecord& Record)
+                        { return Record.ObjectPath == DeletedRecord.ObjectPath; });
+                }
+                else
+                {
+                    for (FGeneratedAssetRecord& RetainedRecord : InOutInventoryRecords)
+                    {
+                        if (RetainedRecord.ObjectPath == DeletedRecord.ObjectPath)
+                        {
+                            RetainedRecord.PendingReason = TEXT("Unreal or source control did not delete the asset; it remains inventoried for a later retry.");
+                            ++OutRetainedCount;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
     static bool CreateOrUpdateSprite(
         IAssetTools& AssetTools,
         UTexture2D* Texture,
@@ -301,6 +928,8 @@ namespace PixelRacerAssetBrowser
         const FString& SpriteName,
         const FIntPoint& SourceUV,
         const FIntPoint& SourceSize,
+        const FString& SourceIdentity,
+        const FString& OutputKind,
         int32& InOutGeneratedAssetCount,
         FString& OutError)
     {
@@ -337,7 +966,7 @@ namespace PixelRacerAssetBrowser
         }
 
         Sprite->SetPivotMode(ESpritePivotMode::Center_Center, FVector2D::ZeroVector, true);
-        Sprite->MarkPackageDirty();
+        ApplyGeneratedAssetOwnership(Sprite, SourceIdentity, OutputKind);
         if (!SaveImportedAsset(Sprite, OutError))
         {
             return false;
@@ -353,6 +982,7 @@ namespace PixelRacerAssetBrowser
         const FString& PackagePath,
         const FString& AssetName,
         const FIntPoint& TileSize,
+        const FString& SourceIdentity,
         int32& InOutGeneratedAssetCount,
         FString& OutError)
     {
@@ -392,7 +1022,7 @@ namespace PixelRacerAssetBrowser
             TileSet->PostEditChangeProperty(TileSizeChanged);
         }
         TileSet->PostEditChange();
-        TileSet->MarkPackageDirty();
+        ApplyGeneratedAssetOwnership(TileSet, SourceIdentity, TEXT("TileSet"));
         if (!SaveImportedAsset(TileSet, OutError))
         {
             return false;
@@ -535,6 +1165,7 @@ namespace PixelRacerAssetBrowser
         const FPixelRacerAssetBrowserItem& Item,
         const FString& PackagePath,
         const FString& AssetName,
+        const FString& SourceIdentity,
         int32& InOutGeneratedAssetCount,
         FString& OutError)
     {
@@ -576,7 +1207,7 @@ namespace PixelRacerAssetBrowser
         Definition->Modify();
         ApplyVehicleDefinitionMetadata(Item, *Definition);
         Definition->DirectionalSprites = MoveTemp(DirectionalSprites);
-        Definition->MarkPackageDirty();
+        ApplyGeneratedAssetOwnership(Definition, SourceIdentity, TEXT("VehicleDefinition"));
         if (!SaveImportedAsset(Definition, OutError))
         {
             return false;
@@ -586,10 +1217,140 @@ namespace PixelRacerAssetBrowser
         return true;
     }
 
+    static bool FinalizeGeneratedAssetImport(
+        UTexture2D* SourceTexture,
+        const FPixelRacerAssetBrowserItem& Item,
+        const FImportedAssetPaths& ImportedPaths,
+        const FString& SourceIdentity,
+        const EGeneratedInventoryState InventoryState,
+        const TArray<FGeneratedAssetRecord>& PreviousRecords,
+        const FString& InventoryReadError,
+        FString& OutCleanupSummary,
+        FString& OutError)
+    {
+        IAssetRegistry& AssetRegistry = FAssetRegistryModule::GetRegistry();
+        AssetRegistry.WaitForCompletion();
+
+        const TArray<FGeneratedAssetRecord> ExpectedRecords = BuildExpectedGeneratedAssets(Item, ImportedPaths);
+        if (InventoryState == EGeneratedInventoryState::Invalid)
+        {
+            TArray<FString> UntrackedCandidates;
+            FindUntrackedGeneratedLookingAssets(
+                AssetRegistry,
+                ImportedPaths.PackagePath,
+                ImportedPaths.AssetName,
+                ExpectedRecords,
+                UntrackedCandidates);
+            OutCleanupSummary = FString::Printf(
+                TEXT("Stale-output cleanup was skipped because the ownership inventory is invalid: %s"),
+                *InventoryReadError);
+            if (!UntrackedCandidates.IsEmpty())
+            {
+                OutCleanupSummary += FString::Printf(
+                    TEXT(" %d untracked generated-looking asset(s) were retained for manual review: %s."),
+                    UntrackedCandidates.Num(),
+                    *SummarizeReviewItems(UntrackedCandidates));
+            }
+            return true;
+        }
+
+        TArray<FGeneratedAssetRecord> MergedRecords;
+        TArray<FGeneratedAssetRecord> StaleRecords;
+        MergeGeneratedAssetRecords(
+            InventoryState == EGeneratedInventoryState::Valid ? PreviousRecords : TArray<FGeneratedAssetRecord>(),
+            ExpectedRecords,
+            MergedRecords,
+            StaleRecords);
+
+        if (!SaveMergedInventoryBeforePruning(SourceTexture, SourceIdentity, MergedRecords, OutError))
+        {
+            OutCleanupSummary = FString::Printf(
+                TEXT("Imported outputs were saved, but the ownership inventory could not be saved, so stale-output cleanup was skipped: %s"),
+                *OutError);
+            return true;
+        }
+
+        int32 DeletedCount = 0;
+        int32 RetainedCount = 0;
+        if (InventoryState == EGeneratedInventoryState::Valid)
+        {
+            PruneStaleGeneratedAssets(
+                AssetRegistry,
+                ImportedPaths,
+                SourceIdentity,
+                StaleRecords,
+                ExpectedRecords,
+                MergedRecords,
+                DeletedCount,
+                RetainedCount);
+
+            if (!SaveGeneratedAssetInventory(SourceTexture, SourceIdentity, MergedRecords, OutError))
+            {
+                OutCleanupSummary = FString::Printf(
+                    TEXT("Imported outputs were saved and cleanup ran, but the final ownership inventory could not be saved; a later import will reconcile remaining outputs: %s"),
+                    *OutError);
+                return true;
+            }
+        }
+
+        TArray<FString> UntrackedCandidates;
+        FindUntrackedGeneratedLookingAssets(
+            AssetRegistry,
+            ImportedPaths.PackagePath,
+            ImportedPaths.AssetName,
+            MergedRecords,
+            UntrackedCandidates);
+
+        TArray<FString> SummaryParts;
+        TArray<FString> RetentionDetails;
+        TSet<FString> ExpectedPaths;
+        for (const FGeneratedAssetRecord& Expected : ExpectedRecords)
+        {
+            ExpectedPaths.Add(Expected.ObjectPath);
+        }
+        for (const FGeneratedAssetRecord& Record : MergedRecords)
+        {
+            if (!ExpectedPaths.Contains(Record.ObjectPath) && !Record.PendingReason.IsEmpty())
+            {
+                RetentionDetails.Add(Record.ObjectPath + TEXT(": ") + Record.PendingReason);
+            }
+        }
+        if (DeletedCount > 0)
+        {
+            SummaryParts.Add(FString::Printf(TEXT("Removed %d obsolete generated asset(s)."), DeletedCount));
+        }
+        if (RetainedCount > 0)
+        {
+            SummaryParts.Add(FString::Printf(
+                TEXT("Retained %d obsolete asset(s) for safety: %s."),
+                RetainedCount,
+                *SummarizeReviewItems(RetentionDetails)));
+        }
+        if (!UntrackedCandidates.IsEmpty())
+        {
+            SummaryParts.Add(FString::Printf(
+                TEXT("Retained %d untracked generated-looking asset(s) for manual legacy review: %s."),
+                UntrackedCandidates.Num(),
+                *SummarizeReviewItems(UntrackedCandidates)));
+        }
+        if (SummaryParts.IsEmpty())
+        {
+            OutCleanupSummary = InventoryState == EGeneratedInventoryState::Missing
+                ? TEXT("Saved an ownership inventory; no untracked legacy outputs were found.")
+                : TEXT("Ownership inventory updated; no stale generated assets were found.");
+        }
+        else
+        {
+            OutCleanupSummary = FString::Join(SummaryParts, TEXT(" "));
+        }
+        return true;
+    }
+
     static bool ImportPixelArtAssets(
         const FPixelRacerAssetBrowserItem& Item,
         FString& OutObjectPath,
         int32& OutGeneratedAssetCount,
+        FString& OutCleanupSummary,
         FString& OutError)
     {
         FString RelativePath;
@@ -658,6 +1419,15 @@ namespace PixelRacerAssetBrowser
         }
         const FString& PackagePath = ImportedPaths.PackagePath;
         const FString& AssetName = ImportedPaths.AssetName;
+        const FString SourceIdentity = Item.PackId + TEXT(":") + RelativePath;
+        UTexture2D* PreviousSourceTexture = LoadObject<UTexture2D>(nullptr, *ImportedPaths.TextureObjectPath);
+        TArray<FGeneratedAssetRecord> PreviousRecords;
+        FString InventoryReadError;
+        const EGeneratedInventoryState InventoryState = ReadGeneratedAssetInventory(
+            PreviousSourceTexture,
+            SourceIdentity,
+            PreviousRecords,
+            InventoryReadError);
 
         UTextureFactory* TextureFactory = NewObject<UTextureFactory>(GetTransientPackage());
         TextureFactory->bCreateMaterial = false;
@@ -719,84 +1489,108 @@ namespace PixelRacerAssetBrowser
 
         OutObjectPath = ImportedPaths.TextureObjectPath;
 
+        bool bGeneratedAssets = true;
         if (Item.Role == TEXT("tileset"))
         {
-            return CreateOrUpdateTileSet(
+            bGeneratedAssets = CreateOrUpdateTileSet(
                 AssetToolsModule.Get(),
                 ImportedTexture,
                 PackagePath,
                 AssetName + TEXT("_TileSet"),
                 FIntPoint(Item.TileWidth, Item.TileHeight),
+                SourceIdentity,
                 OutGeneratedAssetCount,
                 OutError);
         }
-
-        if (Item.Role == TEXT("vehicle_sprite_sheet"))
+        else if (Item.Role == TEXT("vehicle_sprite_sheet"))
         {
             for (int32 DirectionIndex = 0; DirectionIndex < Item.DirectionCount; ++DirectionIndex)
             {
                 const FString SpriteName = FString::Printf(TEXT("%s_Direction_%02d"), *AssetName, DirectionIndex);
-                if (!CreateOrUpdateSprite(
+                bGeneratedAssets = CreateOrUpdateSprite(
                         AssetToolsModule.Get(),
                         ImportedTexture,
                         PackagePath,
                         SpriteName,
                         FIntPoint(DirectionIndex * Item.CellWidth, 0),
                         FIntPoint(Item.CellWidth, Item.CellHeight),
+                        SourceIdentity,
+                        TEXT("VehicleDirectionSprite"),
                         OutGeneratedAssetCount,
-                        OutError))
+                        OutError);
+                if (!bGeneratedAssets)
                 {
-                    return false;
+                    break;
                 }
             }
-            return CreateOrUpdateVehicleDefinition(
-                AssetToolsModule.Get(),
-                Item,
-                PackagePath,
-                AssetName,
-                OutGeneratedAssetCount,
-                OutError);
+            if (bGeneratedAssets)
+            {
+                bGeneratedAssets = CreateOrUpdateVehicleDefinition(
+                    AssetToolsModule.Get(),
+                    Item,
+                    PackagePath,
+                    AssetName,
+                    SourceIdentity,
+                    OutGeneratedAssetCount,
+                    OutError);
+            }
         }
-
-        if (Item.Role == TEXT("vfx_sheet"))
+        else if (Item.Role == TEXT("vfx_sheet"))
         {
-            for (int32 FrameRow = 0; FrameRow < Item.FrameRows; ++FrameRow)
+            for (int32 FrameRow = 0; FrameRow < Item.FrameRows && bGeneratedAssets; ++FrameRow)
             {
                 for (int32 FrameColumn = 0; FrameColumn < Item.FrameColumns; ++FrameColumn)
                 {
                     const int32 FrameIndex = FrameRow * Item.FrameColumns + FrameColumn;
                     const FString SpriteName = FString::Printf(TEXT("%s_Frame_%03d"), *AssetName, FrameIndex);
-                    if (!CreateOrUpdateSprite(
+                    bGeneratedAssets = CreateOrUpdateSprite(
                             AssetToolsModule.Get(),
                             ImportedTexture,
                             PackagePath,
                             SpriteName,
                             FIntPoint(FrameColumn * Item.FrameWidth, FrameRow * Item.FrameHeight),
                             FIntPoint(Item.FrameWidth, Item.FrameHeight),
+                            SourceIdentity,
+                            TEXT("VfxFrameSprite"),
                             OutGeneratedAssetCount,
-                            OutError))
+                            OutError);
+                    if (!bGeneratedAssets)
                     {
-                        return false;
+                        break;
                     }
                 }
             }
-            return true;
         }
-
-        if (Item.Role == TEXT("environment_piece") || Item.Role == TEXT("sprite"))
+        else if (Item.Role == TEXT("environment_piece") || Item.Role == TEXT("sprite"))
         {
-            return CreateOrUpdateSprite(
+            bGeneratedAssets = CreateOrUpdateSprite(
                 AssetToolsModule.Get(),
                 ImportedTexture,
                 PackagePath,
                 AssetName + TEXT("_Sprite"),
                 FIntPoint::ZeroValue,
                 TextureSize,
+                SourceIdentity,
+                TEXT("EnvironmentSprite"),
                 OutGeneratedAssetCount,
                 OutError);
         }
 
-        return true;
+        if (!bGeneratedAssets)
+        {
+            return false;
+        }
+
+        return FinalizeGeneratedAssetImport(
+            ImportedTexture,
+            Item,
+            ImportedPaths,
+            SourceIdentity,
+            InventoryState,
+            PreviousRecords,
+            InventoryReadError,
+            OutCleanupSummary,
+            OutError);
     }
 }
 
@@ -1288,23 +2082,32 @@ FReply SPixelRacerAssetBrowser::ImportSelectedTexture()
 
     FString ObjectPath;
     int32 GeneratedAssetCount = 0;
+    FString CleanupSummary;
     FString Error;
-    if (PixelRacerAssetBrowser::ImportPixelArtAssets(*SelectedItem, ObjectPath, GeneratedAssetCount, Error))
+    if (PixelRacerAssetBrowser::ImportPixelArtAssets(*SelectedItem, ObjectPath, GeneratedAssetCount, CleanupSummary, Error))
     {
         LastActionMessage = FString::Printf(
-            TEXT("Imported pixel-safe texture and created/updated %d Paper2D asset(s): %s"),
+            TEXT("Imported pixel-safe texture and created/updated %d asset(s): %s"),
             GeneratedAssetCount,
             *ObjectPath);
+        if (!CleanupSummary.IsEmpty())
+        {
+            LastActionMessage += TEXT("\n") + CleanupSummary;
+        }
     }
     else
     {
         LastActionMessage = ObjectPath.IsEmpty()
             ? FString::Printf(TEXT("Import failed: %s"), *Error)
             : FString::Printf(
-                TEXT("Partial import: saved texture %s and %d Paper2D asset(s) before a later creation failure: %s"),
+                TEXT("Asset generation stopped after saving texture %s and %d Paper2D asset(s): %s"),
                 *ObjectPath,
                 GeneratedAssetCount,
                 *Error);
+        if (!CleanupSummary.IsEmpty())
+        {
+            LastActionMessage += TEXT("\n") + CleanupSummary;
+        }
     }
     return FReply::Handled();
 }

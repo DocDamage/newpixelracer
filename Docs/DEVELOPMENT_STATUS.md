@@ -67,7 +67,7 @@ The first real UHT/UBT pass exposed these source issues; each was fixed before t
 
 1. Complete Phase C's Paper2D import/render adapter in `PixelRacerTrackEditor`:
    - source PNG import now writes a deterministic Unreal texture asset, applies nearest filtering, disables mipmaps/compression, and does not rescale source pixels;
-   - vehicle frame metadata creates centered directional Paper2D sprites; tile-grid metadata creates Paper2D TileSets; reimport updates generated assets at the same paths, but stale slices are not pruned when metadata changes;
+   - vehicle frame metadata creates centered directional Paper2D sprites; tile-grid metadata creates Paper2D TileSets; reimport updates generated assets at the same paths and now tracks generated outputs per source, pruning only verified stale outputs;
    - Nitro and Smoke VFX metadata now describes 64×64 grids (56 and 15 frames) and creates centered Paper2D sprites; VFX starter placement and live editor verification remain;
    - the importer and image-backed canvas rendering build successfully with Unreal 5.8.3 and pass QuickCheck; canvas rendering still needs live editor verification.
 2. Live-verify the runtime TrackDocument preview and vehicle driving loop in PIE; the code path now supports selected/imported starter vehicles and current-track spawning.
@@ -107,5 +107,14 @@ The user confirmed **all remaining checks worked** on the rebuilt editor: road p
 
 - Phase A compile/load and Phase B editor acceptance: complete.
 - Latest changed C++ source: built successfully with UE 5.8.3; QuickCheck passed with 0 errors and 0 warnings.
-- Phase C importer/canvas adapter: in progress. Pixel-safe textures, metadata-driven vehicle and VFX sprites, Paper2D TileSets, saved vehicle definitions, image-backed tile/piece drawing, tile-cell selection, browser Rescan refresh, and the selected-vehicle PIE drive path are implemented; stale generated slices are not pruned, and the new runtime/canvas rendering still needs live editor verification. Keep editor-only import dependencies in PixelRacerTrackEditor.
+- Phase C importer/canvas adapter: in progress. Pixel-safe textures, metadata-driven vehicle and VFX sprites, Paper2D TileSets, saved vehicle definitions, image-backed tile/piece drawing, tile-cell selection, browser Rescan refresh, selected-vehicle PIE driving, and conservative stale-output pruning are implemented. Keep editor-only import dependencies in PixelRacerTrackEditor.
 - Runtime TrackDocument preview actor and current-track pawn spawning are implemented in `PixelRacerCore`; live PIE verification remains.
+
+### Phase C importer continuation — 2026-09-23
+
+- Added a per-source generated-output inventory to the imported texture package metadata, plus owner/source/kind/version metadata on generated assets.
+- A complete import saves current outputs before cleanup. Partial imports skip inventory updates and pruning. Import completion is reported separately from inventory/cleanup failures. Pruning checks inventory identity, exact output location, class and ownership tags, saved and loaded referencers, PIE, dirty packages, and read-only files; it uses Unreal's confirmed asset deletion API without force-delete helpers.
+- Outputs that are referenced, dirty, read-only, ambiguous, or blocked by source control remain inventoried with a reason. Legacy name matches are reported for manual review and never adopted or deleted automatically.
+- Verification on this source revision: `Tools/BuildEditorOnce.bat` succeeded; `python Tools/quick_check.py` reported 0 errors and 0 warnings; `git diff --check` passed; the focused independent cleanup review found no actionable issues.
+- Live-check status: the editor process launched and responds, but the Unreal MCP bridge refuses connections; no import/delete/PIE regression was run in this turn.
+- Still required in a disposable test pack and live editor: unchanged reimport, direction/frame count decreases and increases, role change, invalid metadata, partial import/save failure, reference retention, legacy untagged outputs, source-control/read-only behavior, and cancellation/retry of the delete confirmation. No runtime cleanup or PIE claim is made yet.
