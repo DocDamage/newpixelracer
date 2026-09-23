@@ -1,0 +1,30 @@
+{
+  "VehicleId": "Hachiroku_Drifter",
+  "DisplayName": "Hachiroku AE86",
+  "Type": "Car",
+  "Category": "Drift Legend",
+  "SourceSpriteSheet": "SourceArt/WheelsInPixels/Cars/Hachiroku_Drifter/Hachiroku_Drifter.png",
+  "DirectionCount": 16,
+  "SpriteCellSize": {
+    "X": 46,
+    "Y": 54
+  },
+  "Stats": {
+    "Speed": 82,
+    "Acceleration": 80,
+    "Handling": 88,
+    "Drift": 96,
+    "Boost": 80,
+    "Weight": 60
+  },
+  "ColorVariants": [
+    "default",
+    "black",
+    "blue",
+    "green",
+    "pink",
+    "purple",
+    "red",
+    "yellow"
+  ]
+}

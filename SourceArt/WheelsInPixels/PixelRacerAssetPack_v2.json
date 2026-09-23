@@ -1,0 +1,2044 @@
+{
+  "schemaVersion": 2,
+  "packId": "wheels_in_pixels",
+  "displayName": "Wheels in Pixels",
+  "sourceFormat": "png-folder",
+  "assetCount": 224,
+  "assets": [
+    {
+      "path": "Bikes/Bologna_Superbike/Bologna_Superbike.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Bikes/Bologna_Superbike/Bologna_Superbike_black.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Bikes/Bologna_Superbike/Bologna_Superbike_blue.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Bikes/Bologna_Superbike/Bologna_Superbike_green.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Bikes/Bologna_Superbike/Bologna_Superbike_pink.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Bikes/Bologna_Superbike/Bologna_Superbike_purple.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Bikes/Bologna_Superbike/Bologna_Superbike_white.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Bikes/Classic_Italian_Scooter/Classic_Italian_Scooter.png",
+      "width": 736,
+      "height": 55,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 55
+    },
+    {
+      "path": "Bikes/Classic_Italian_Scooter/Classic_Italian_Scooter_black.png",
+      "width": 736,
+      "height": 55,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 55
+    },
+    {
+      "path": "Bikes/Classic_Italian_Scooter/Classic_Italian_Scooter_blue.png",
+      "width": 736,
+      "height": 55,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 55
+    },
+    {
+      "path": "Bikes/Classic_Italian_Scooter/Classic_Italian_Scooter_green.png",
+      "width": 736,
+      "height": 55,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 55
+    },
+    {
+      "path": "Bikes/Classic_Italian_Scooter/Classic_Italian_Scooter_pink.png",
+      "width": 736,
+      "height": 55,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 55
+    },
+    {
+      "path": "Bikes/Classic_Italian_Scooter/Classic_Italian_Scooter_purple.png",
+      "width": 736,
+      "height": 55,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 55
+    },
+    {
+      "path": "Bikes/Classic_Italian_Scooter/Classic_Italian_Scooter_white.png",
+      "width": 736,
+      "height": 55,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 55
+    },
+    {
+      "path": "Bikes/Dirt_Mud_Bike/Dirt_Mud_Bike.png",
+      "width": 736,
+      "height": 55,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 55
+    },
+    {
+      "path": "Bikes/Dirt_Mud_Bike/Dirt_Mud_Bike_black.png",
+      "width": 736,
+      "height": 55,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 55
+    },
+    {
+      "path": "Bikes/Dirt_Mud_Bike/Dirt_Mud_Bike_blue.png",
+      "width": 736,
+      "height": 55,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 55
+    },
+    {
+      "path": "Bikes/Dirt_Mud_Bike/Dirt_Mud_Bike_green.png",
+      "width": 736,
+      "height": 55,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 55
+    },
+    {
+      "path": "Bikes/Dirt_Mud_Bike/Dirt_Mud_Bike_pink.png",
+      "width": 736,
+      "height": 55,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 55
+    },
+    {
+      "path": "Bikes/Dirt_Mud_Bike/Dirt_Mud_Bike_purple.png",
+      "width": 736,
+      "height": 55,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 55
+    },
+    {
+      "path": "Bikes/Dirt_Mud_Bike/Dirt_Mud_Bike_white.png",
+      "width": 736,
+      "height": 55,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 55
+    },
+    {
+      "path": "Bikes/Iron_Chopper/Iron_Chopper.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Bikes/Iron_Chopper/Iron_Chopper_black.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Bikes/Iron_Chopper/Iron_Chopper_green.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Bikes/Iron_Chopper/Iron_Chopper_pink.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Bikes/Iron_Chopper/Iron_Chopper_purple.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Bikes/Iron_Chopper/Iron_Chopper_red.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Bikes/Iron_Chopper/Iron_Chopper_white.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Classic_Bug/Classic_Bug.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Classic_Bug/Classic_Bug_black.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Classic_Bug/Classic_Bug_blue.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Classic_Bug/Classic_Bug_pink.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Classic_Bug/Classic_Bug_purple.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Classic_Bug/Classic_Bug_red.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Classic_Bug/Classic_Bug_white.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Classic_Bug/Classic_Bug_yellow.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Classic_Mako_Vette/Classic_Mako_Vette.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Classic_Mako_Vette/Classic_Mako_Vette_black.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Classic_Mako_Vette/Classic_Mako_Vette_green.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Classic_Mako_Vette/Classic_Mako_Vette_pink.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Classic_Mako_Vette/Classic_Mako_Vette_purple.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Classic_Mako_Vette/Classic_Mako_Vette_red.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Classic_Mako_Vette/Classic_Mako_Vette_white.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Classic_Mako_Vette/Classic_Mako_Vette_yellow.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Compact_Rally_Hatch/Compact_Rally_Hatch.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Compact_Rally_Hatch/Compact_Rally_Hatch_blue.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Compact_Rally_Hatch/Compact_Rally_Hatch_green.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Compact_Rally_Hatch/Compact_Rally_Hatch_pink.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Compact_Rally_Hatch/Compact_Rally_Hatch_purple.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Compact_Rally_Hatch/Compact_Rally_Hatch_yellow.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Formula_Grand_Prix/Formula_Grand_Prix.png",
+      "width": 512,
+      "height": 32,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 32,
+      "cellHeight": 32
+    },
+    {
+      "path": "Cars/Formula_Grand_Prix/Formula_Grand_Prix_black.png",
+      "width": 512,
+      "height": 32,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 32,
+      "cellHeight": 32
+    },
+    {
+      "path": "Cars/Formula_Grand_Prix/Formula_Grand_Prix_blue.png",
+      "width": 512,
+      "height": 32,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 32,
+      "cellHeight": 32
+    },
+    {
+      "path": "Cars/Formula_Grand_Prix/Formula_Grand_Prix_green.png",
+      "width": 512,
+      "height": 32,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 32,
+      "cellHeight": 32
+    },
+    {
+      "path": "Cars/Formula_Grand_Prix/Formula_Grand_Prix_pink.png",
+      "width": 512,
+      "height": 32,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 32,
+      "cellHeight": 32
+    },
+    {
+      "path": "Cars/Formula_Grand_Prix/Formula_Grand_Prix_purple.png",
+      "width": 512,
+      "height": 32,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 32,
+      "cellHeight": 32
+    },
+    {
+      "path": "Cars/Formula_Grand_Prix/Formula_Grand_Prix_white.png",
+      "width": 512,
+      "height": 32,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 32,
+      "cellHeight": 32
+    },
+    {
+      "path": "Cars/Formula_Grand_Prix/Formula_Grand_Prix_yellow.png",
+      "width": 512,
+      "height": 32,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 32,
+      "cellHeight": 32
+    },
+    {
+      "path": "Cars/Grand_Royalty_Limo/Grand_Royalty_Limo.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Grand_Royalty_Limo/Grand_Royalty_Limo_black.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Grand_Royalty_Limo/Grand_Royalty_Limo_blue.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Grand_Royalty_Limo/Grand_Royalty_Limo_pink.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Grand_Royalty_Limo/Grand_Royalty_Limo_purple.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Grand_Royalty_Limo/Grand_Royalty_Limo_red.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Grand_Royalty_Limo/Grand_Royalty_Limo_white.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Grand_Royalty_Limo/Grand_Royalty_Limo_yellow.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Group_B_Legend/Group_B_Legend.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Group_B_Legend/Group_B_Legend_black.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Group_B_Legend/Group_B_Legend_blue.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Group_B_Legend/Group_B_Legend_green.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Group_B_Legend/Group_B_Legend_pink.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Group_B_Legend/Group_B_Legend_purple.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Group_B_Legend/Group_B_Legend_white.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Group_B_Legend/Group_B_Legend_yellow.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Hachiroku_Drifter/Hachiroku_Drifter.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Hachiroku_Drifter/Hachiroku_Drifter_black.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Hachiroku_Drifter/Hachiroku_Drifter_blue.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Hachiroku_Drifter/Hachiroku_Drifter_green.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Hachiroku_Drifter/Hachiroku_Drifter_pink.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Hachiroku_Drifter/Hachiroku_Drifter_purple.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Hachiroku_Drifter/Hachiroku_Drifter_red.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Hachiroku_Drifter/Hachiroku_Drifter_yellow.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Heavy_Tactical_SUV/Heavy_Tactical_SUV.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Heavy_Tactical_SUV/Heavy_Tactical_SUV_black.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Heavy_Tactical_SUV/Heavy_Tactical_SUV_blue.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Heavy_Tactical_SUV/Heavy_Tactical_SUV_green.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Heavy_Tactical_SUV/Heavy_Tactical_SUV_pink.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Heavy_Tactical_SUV/Heavy_Tactical_SUV_purple.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Heavy_Tactical_SUV/Heavy_Tactical_SUV_red.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Heavy_Tactical_SUV/Heavy_Tactical_SUV_yellow.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/High_Wing_Muscle/High_Wing_Muscle.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/High_Wing_Muscle/High_Wing_Muscle_black.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/High_Wing_Muscle/High_Wing_Muscle_green.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/High_Wing_Muscle/High_Wing_Muscle_pink.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/High_Wing_Muscle/High_Wing_Muscle_purple.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/High_Wing_Muscle/High_Wing_Muscle_red.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/High_Wing_Muscle/High_Wing_Muscle_white.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/High_Wing_Muscle/High_Wing_Muscle_yellow.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Hyper_Electric_Future/Hyper_Electric_Future.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Italian_Supercar_87/Italian_Supercar_87.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Italian_Supercar_87/Italian_Supercar_87_black.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Italian_Supercar_87/Italian_Supercar_87_blue.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Italian_Supercar_87/Italian_Supercar_87_green.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Italian_Supercar_87/Italian_Supercar_87_pink.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Italian_Supercar_87/Italian_Supercar_87_purple.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Italian_Supercar_87/Italian_Supercar_87_white.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Italian_Supercar_87/Italian_Supercar_87_yellow.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Midnight_Godzilla/Midnight_Godzilla.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Midnight_Godzilla/Midnight_Godzilla_black.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Midnight_Godzilla/Midnight_Godzilla_green.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Midnight_Godzilla/Midnight_Godzilla_pink.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Midnight_Godzilla/Midnight_Godzilla_purple.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Midnight_Godzilla/Midnight_Godzilla_red.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Midnight_Godzilla/Midnight_Godzilla_white.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Midnight_Godzilla/Midnight_Godzilla_yellow.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Military_Luxury_4x4/Military_Luxury_4x4.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Military_Luxury_4x4/Military_Luxury_4x4_black.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Military_Luxury_4x4/Military_Luxury_4x4_blue.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Military_Luxury_4x4/Military_Luxury_4x4_green.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Military_Luxury_4x4/Military_Luxury_4x4_pink.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Military_Luxury_4x4/Military_Luxury_4x4_purple.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Military_Luxury_4x4/Military_Luxury_4x4_red.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Military_Luxury_4x4/Military_Luxury_4x4_yellow.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Modern_Monster_Pickup/Modern_Monster_Pickup.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Modern_Monster_Pickup/Modern_Monster_Pickup_black.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Modern_Monster_Pickup/Modern_Monster_Pickup_green.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Modern_Monster_Pickup/Modern_Monster_Pickup_pink.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Modern_Monster_Pickup/Modern_Monster_Pickup_purple.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Modern_Monster_Pickup/Modern_Monster_Pickup_red.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Modern_Monster_Pickup/Modern_Monster_Pickup_white.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Modern_Monster_Pickup/Modern_Monster_Pickup_yellow.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Open_Wheel_Roadster/Open_Wheel_Roadster.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Open_Wheel_Roadster/Open_Wheel_Roadster_black.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Open_Wheel_Roadster/Open_Wheel_Roadster_green.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Open_Wheel_Roadster/Open_Wheel_Roadster_pink.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Open_Wheel_Roadster/Open_Wheel_Roadster_purple.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Open_Wheel_Roadster/Open_Wheel_Roadster_red.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Open_Wheel_Roadster/Open_Wheel_Roadster_white.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Open_Wheel_Roadster/Open_Wheel_Roadster_yellow.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Polygon_Truck/Polygon_Truck.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Polygon_Truck/Polygon_Truck_black.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Polygon_Truck/Polygon_Truck_blue.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Polygon_Truck/Polygon_Truck_green.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Polygon_Truck/Polygon_Truck_pink.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Polygon_Truck/Polygon_Truck_purple.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Polygon_Truck/Polygon_Truck_red.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Polygon_Truck/Polygon_Truck_yellow.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Pony_Fastback_70s/Pony_Fastback_70s.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Pony_Fastback_70s/Pony_Fastback_70s_black.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Pony_Fastback_70s/Pony_Fastback_70s_blue.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Pony_Fastback_70s/Pony_Fastback_70s_green.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Pony_Fastback_70s/Pony_Fastback_70s_pink.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Pony_Fastback_70s/Pony_Fastback_70s_purple.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Pony_Fastback_70s/Pony_Fastback_70s_white.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Pony_Fastback_70s/Pony_Fastback_70s_yellow.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Retro_Wedge_70s/Retro_Wedge_70s.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Retro_Wedge_70s/Retro_Wedge_70s_black.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Retro_Wedge_70s/Retro_Wedge_70s_blue.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Retro_Wedge_70s/Retro_Wedge_70s_green.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Retro_Wedge_70s/Retro_Wedge_70s_pink.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Retro_Wedge_70s/Retro_Wedge_70s_purple.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Retro_Wedge_70s/Retro_Wedge_70s_white.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Retro_Wedge_70s/Retro_Wedge_70s_yellow.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Stuttgart_91/Stuttgart_91.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Stuttgart_91/Stuttgart_91_black.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Stuttgart_91/Stuttgart_91_green.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Stuttgart_91/Stuttgart_91_pink.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Stuttgart_91/Stuttgart_91_purple.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Stuttgart_91/Stuttgart_91_red.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Stuttgart_91/Stuttgart_91_white.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Stuttgart_91/Stuttgart_91_yellow.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Tiny_British_Hot_Hatch/Tiny_British_Hot_Hatch.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Tiny_British_Hot_Hatch/Tiny_British_Hot_Hatch_black.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Tiny_British_Hot_Hatch/Tiny_British_Hot_Hatch_blue.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Tiny_British_Hot_Hatch/Tiny_British_Hot_Hatch_green.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Tiny_British_Hot_Hatch/Tiny_British_Hot_Hatch_pink.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Tiny_British_Hot_Hatch/Tiny_British_Hot_Hatch_purple.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Tiny_British_Hot_Hatch/Tiny_British_Hot_Hatch_white.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Tiny_British_Hot_Hatch/Tiny_British_Hot_Hatch_yellow.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/TukTuk_Utility_3W/TukTuk_Utility_3W.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/TukTuk_Utility_3W/TukTuk_Utility_3W_black.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/TukTuk_Utility_3W/TukTuk_Utility_3W_blue.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/TukTuk_Utility_3W/TukTuk_Utility_3W_green.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/TukTuk_Utility_3W/TukTuk_Utility_3W_pink.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/TukTuk_Utility_3W/TukTuk_Utility_3W_purple.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/TukTuk_Utility_3W/TukTuk_Utility_3W_white.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/TukTuk_Utility_3W/TukTuk_Utility_3W_yellow.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Vintage_Fins_Limousine/Vintage_Fins_Limousine.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Vintage_Fins_Limousine/Vintage_Fins_Limousine_black.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Vintage_Fins_Limousine/Vintage_Fins_Limousine_blue.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Vintage_Fins_Limousine/Vintage_Fins_Limousine_green.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Vintage_Fins_Limousine/Vintage_Fins_Limousine_pink.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Vintage_Fins_Limousine/Vintage_Fins_Limousine_purple.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Vintage_Fins_Limousine/Vintage_Fins_Limousine_white.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Cars/Vintage_Fins_Limousine/Vintage_Fins_Limousine_yellow.png",
+      "width": 736,
+      "height": 54,
+      "role": "vehicle_sprite_sheet",
+      "directionCount": 16,
+      "cellWidth": 46,
+      "cellHeight": 54
+    },
+    {
+      "path": "Enviroment/Grid Slots.png",
+      "width": 736,
+      "height": 55,
+      "role": "environment_piece"
+    },
+    {
+      "path": "Enviroment/barrier_black.png",
+      "width": 144,
+      "height": 16,
+      "role": "environment_piece"
+    },
+    {
+      "path": "Enviroment/barrier_green.png",
+      "width": 144,
+      "height": 16,
+      "role": "environment_piece"
+    },
+    {
+      "path": "Enviroment/barrier_red.png",
+      "width": 144,
+      "height": 16,
+      "role": "environment_piece"
+    },
+    {
+      "path": "Enviroment/barrier_white.png",
+      "width": 144,
+      "height": 16,
+      "role": "environment_piece"
+    },
+    {
+      "path": "Enviroment/barrier_yellow.png",
+      "width": 144,
+      "height": 16,
+      "role": "environment_piece"
+    },
+    {
+      "path": "Enviroment/tire.png",
+      "width": 16,
+      "height": 16,
+      "role": "environment_piece"
+    },
+    {
+      "path": "Tilesets/custom_race_track_tileset.png",
+      "width": 640,
+      "height": 640,
+      "role": "tileset",
+      "tileWidth": 64,
+      "tileHeight": 64,
+      "columns": 10,
+      "rows": 10,
+      "tileCount": 100
+    },
+    {
+      "path": "Tilesets/dirt_1.png",
+      "width": 192,
+      "height": 64,
+      "role": "tileset",
+      "tileWidth": 64,
+      "tileHeight": 64,
+      "columns": 3,
+      "rows": 1,
+      "tileCount": 3
+    },
+    {
+      "path": "Tilesets/dirt_2.png",
+      "width": 192,
+      "height": 64,
+      "role": "tileset",
+      "tileWidth": 64,
+      "tileHeight": 64,
+      "columns": 3,
+      "rows": 1,
+      "tileCount": 3
+    },
+    {
+      "path": "Tilesets/grass.png",
+      "width": 192,
+      "height": 64,
+      "role": "tileset",
+      "tileWidth": 64,
+      "tileHeight": 64,
+      "columns": 3,
+      "rows": 1,
+      "tileCount": 3
+    },
+    {
+      "path": "Tilesets/grass2.png",
+      "width": 192,
+      "height": 64,
+      "role": "tileset",
+      "tileWidth": 64,
+      "tileHeight": 64,
+      "columns": 3,
+      "rows": 1,
+      "tileCount": 3
+    },
+    {
+      "path": "Tilesets/grass2_dirt2_mix.png",
+      "width": 192,
+      "height": 64,
+      "role": "tileset",
+      "tileWidth": 64,
+      "tileHeight": 64,
+      "columns": 3,
+      "rows": 1,
+      "tileCount": 3
+    },
+    {
+      "path": "Tilesets/grass2_dirt_mix.png",
+      "width": 192,
+      "height": 64,
+      "role": "tileset",
+      "tileWidth": 64,
+      "tileHeight": 64,
+      "columns": 3,
+      "rows": 1,
+      "tileCount": 3
+    },
+    {
+      "path": "Tilesets/grass2_sand_mix.png",
+      "width": 192,
+      "height": 64,
+      "role": "tileset",
+      "tileWidth": 64,
+      "tileHeight": 64,
+      "columns": 3,
+      "rows": 1,
+      "tileCount": 3
+    },
+    {
+      "path": "Tilesets/grass3.png",
+      "width": 192,
+      "height": 64,
+      "role": "tileset",
+      "tileWidth": 64,
+      "tileHeight": 64,
+      "columns": 3,
+      "rows": 1,
+      "tileCount": 3
+    },
+    {
+      "path": "Tilesets/grass3_dirt2_mix.png",
+      "width": 192,
+      "height": 64,
+      "role": "tileset",
+      "tileWidth": 64,
+      "tileHeight": 64,
+      "columns": 3,
+      "rows": 1,
+      "tileCount": 3
+    },
+    {
+      "path": "Tilesets/grass3_dirt_mix.png",
+      "width": 192,
+      "height": 64,
+      "role": "tileset",
+      "tileWidth": 64,
+      "tileHeight": 64,
+      "columns": 3,
+      "rows": 1,
+      "tileCount": 3
+    },
+    {
+      "path": "Tilesets/grass3_sand_mix.png",
+      "width": 192,
+      "height": 64,
+      "role": "tileset",
+      "tileWidth": 64,
+      "tileHeight": 64,
+      "columns": 3,
+      "rows": 1,
+      "tileCount": 3
+    },
+    {
+      "path": "Tilesets/grass_dirt2_mix.png",
+      "width": 192,
+      "height": 64,
+      "role": "tileset",
+      "tileWidth": 64,
+      "tileHeight": 64,
+      "columns": 3,
+      "rows": 1,
+      "tileCount": 3
+    },
+    {
+      "path": "Tilesets/grass_dirt_mix.png",
+      "width": 192,
+      "height": 64,
+      "role": "tileset",
+      "tileWidth": 64,
+      "tileHeight": 64,
+      "columns": 3,
+      "rows": 1,
+      "tileCount": 3
+    },
+    {
+      "path": "Tilesets/grass_sand.png",
+      "width": 192,
+      "height": 64,
+      "role": "tileset",
+      "tileWidth": 64,
+      "tileHeight": 64,
+      "columns": 3,
+      "rows": 1,
+      "tileCount": 3
+    },
+    {
+      "path": "Tilesets/race_track_1.png",
+      "width": 192,
+      "height": 64,
+      "role": "tileset",
+      "tileWidth": 64,
+      "tileHeight": 64,
+      "columns": 3,
+      "rows": 1,
+      "tileCount": 3
+    },
+    {
+      "path": "Tilesets/race_track_2.png",
+      "width": 192,
+      "height": 64,
+      "role": "tileset",
+      "tileWidth": 64,
+      "tileHeight": 64,
+      "columns": 3,
+      "rows": 1,
+      "tileCount": 3
+    },
+    {
+      "path": "Tilesets/race_track_3.png",
+      "width": 192,
+      "height": 64,
+      "role": "tileset",
+      "tileWidth": 64,
+      "tileHeight": 64,
+      "columns": 3,
+      "rows": 1,
+      "tileCount": 3
+    },
+    {
+      "path": "Tilesets/sand.png",
+      "width": 192,
+      "height": 64,
+      "role": "tileset",
+      "tileWidth": 64,
+      "tileHeight": 64,
+      "columns": 3,
+      "rows": 1,
+      "tileCount": 3
+    },
+    {
+      "path": "Tilesets/sand_clean.png",
+      "width": 192,
+      "height": 64,
+      "role": "tileset",
+      "tileWidth": 64,
+      "tileHeight": 64,
+      "columns": 3,
+      "rows": 1,
+      "tileCount": 3
+    },
+    {
+      "path": "VFX/Nitro/nitroVFX-Sheet.png",
+      "width": 448,
+      "height": 512,
+      "role": "vfx_sheet"
+    },
+    {
+      "path": "VFX/Smoke/Smoke-Sheet.png",
+      "width": 192,
+      "height": 320,
+      "role": "vfx_sheet"
+    }
+  ],
+  "authoring": {
+    "preferredSpriteTool": "Paper2DPlus",
+    "paper2DPlusOptional": true,
+    "defaultTileSize": 64,
+    "supportsRuntimeTrackReferences": true
+  }
+}

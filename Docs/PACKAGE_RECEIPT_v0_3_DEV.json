@@ -1,0 +1,47 @@
+{
+  "packageVersion": "0.3.0-dev",
+  "engineTarget": "Unreal Engine 5.8.3",
+  "project": "PixelRacer/PixelRacer.uproject",
+  "validation": {
+    "quickCheck": "0 errors, 0 warnings",
+    "unrealCompile": "NOT RUN - Unreal Engine 5.8.3 unavailable in build environment"
+  },
+  "sourceFileCount": 293,
+  "criticalFiles": [
+    {
+      "path": "Plugins/PixelRacerTools/PixelRacerTools.uplugin",
+      "bytes": 689,
+      "sha256": "ac554c6a24b5905c5b10132b4a40dbca1eb0175a7122c19403e12f32ad40b467"
+    },
+    {
+      "path": "Plugins/PixelRacerTools/Source/PixelRacerCore/Public/PixelRacerTrackAuthoringLibrary.h",
+      "bytes": 4941,
+      "sha256": "e2d199b81dcce81a70588c936161cac47ca7b0aef6f87120bbbab699da9fc0b1"
+    },
+    {
+      "path": "Plugins/PixelRacerTools/Source/PixelRacerCore/Private/PixelRacerTrackAuthoringLibrary.cpp",
+      "bytes": 17612,
+      "sha256": "d097892ad9847af1368f07eb7539da440a068be4db5ca52b34d821cac5b5ea4b"
+    },
+    {
+      "path": "Plugins/PixelRacerTools/Source/PixelRacerCore/Private/PixelRacerAuthoringLibrary.cpp",
+      "bytes": 10730,
+      "sha256": "1824172abc8c443f6b702916a0bcd22511c46024d8ec6a9d05c5e1371dfc01c4"
+    },
+    {
+      "path": "Plugins/PixelRacerTools/Source/PixelRacerTrackEditor/Private/SPixelRacerTrackCanvas.cpp",
+      "bytes": 26744,
+      "sha256": "1537229f50735511f5a8e52ee776a1dd9857c308344ca46b5d700427966ca823"
+    },
+    {
+      "path": "Plugins/PixelRacerTools/Source/PixelRacerTrackEditor/Private/PixelRacerTrackEditorModule.cpp",
+      "bytes": 25732,
+      "sha256": "48b21e21c64e8b486059f28f036a79240a32593506be7e40bb8feacb3830285e"
+    },
+    {
+      "path": "Tools/quick_check.py",
+      "bytes": 5915,
+      "sha256": "3900d5c1ebeb7ad7906fd1123228ddfe949a4bbb3bb404091cc8d0be0c0dc17d"
+    }
+  ]
+}

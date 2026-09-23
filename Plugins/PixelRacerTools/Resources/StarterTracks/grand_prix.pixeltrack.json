@@ -1,0 +1,473 @@
+{
+  "SchemaVersion": 1,
+  "Metadata": {
+    "TrackId": "grand_prix",
+    "DisplayName": "Sunset Grand Prix Circuit",
+    "Description": "Migrated from the original Pixel Racer: Pro GP Asphalt Course",
+    "Author": "Pixel Racer",
+    "Tags": [
+      "legacy-migration",
+      "medium",
+      "asphalt"
+    ]
+  },
+  "Topology": "Circuit",
+  "bInfiniteCanvas": true,
+  "ChunkSize": 2048,
+  "RoadSplines": [
+    {
+      "Name": "Main Road",
+      "bClosedLoop": true,
+      "ControlPoints": [
+        {
+          "Location": {
+            "X": 1800,
+            "Y": 2200,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 1.0,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 1800,
+            "Y": 1400,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 1.0,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 1800,
+            "Y": 800,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.85,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 2100,
+            "Y": 500,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.7,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 2600,
+            "Y": 500,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.9,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 3000,
+            "Y": 800,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.7,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 3100,
+            "Y": 1300,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.8,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 2800,
+            "Y": 1600,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.65,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 2400,
+            "Y": 1500,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.8,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 2200,
+            "Y": 1700,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.6,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 2400,
+            "Y": 2000,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.85,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 2900,
+            "Y": 2200,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.75,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 3000,
+            "Y": 2500,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.65,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 2600,
+            "Y": 2650,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.85,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 1200,
+            "Y": 2650,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 1.0,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 600,
+            "Y": 2500,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.7,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 500,
+            "Y": 2000,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.85,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 700,
+            "Y": 1500,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.65,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 1100,
+            "Y": 1500,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.85,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 1400,
+            "Y": 1200,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.65,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 1300,
+            "Y": 700,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.75,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 900,
+            "Y": 500,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.7,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 500,
+            "Y": 800,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.65,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 450,
+            "Y": 1300,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.8,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 500,
+            "Y": 1800,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.85,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        },
+        {
+          "Location": {
+            "X": 1000,
+            "Y": 2200,
+            "Z": 0
+          },
+          "Width": 160,
+          "SpeedScale": 0.95,
+          "SurfaceId": "asphalt",
+          "ElevationLayer": 0,
+          "bManualWidth": false,
+          "bAllowCrossing": false
+        }
+      ]
+    }
+  ],
+  "Pieces": [],
+  "ProceduralZones": [],
+  "Checkpoints": [],
+  "GridSlots": [
+    {
+      "Order": 0,
+      "Location": {
+        "X": 1800,
+        "Y": 2200,
+        "Z": 0
+      },
+      "YawDegrees": -90
+    },
+    {
+      "Order": 1,
+      "Location": {
+        "X": 1860,
+        "Y": 2280,
+        "Z": 0
+      },
+      "YawDegrees": -90
+    },
+    {
+      "Order": 2,
+      "Location": {
+        "X": 1740,
+        "Y": 2360,
+        "Z": 0
+      },
+      "YawDegrees": -90
+    },
+    {
+      "Order": 3,
+      "Location": {
+        "X": 1860,
+        "Y": 2440,
+        "Z": 0
+      },
+      "YawDegrees": -90
+    },
+    {
+      "Order": 4,
+      "Location": {
+        "X": 1740,
+        "Y": 2520,
+        "Z": 0
+      },
+      "YawDegrees": -90
+    },
+    {
+      "Order": 5,
+      "Location": {
+        "X": 1860,
+        "Y": 2600,
+        "Z": 0
+      },
+      "YawDegrees": -90
+    }
+  ],
+  "RacingLines": [],
+  "SurfaceProfiles": [
+    {
+      "SurfaceId": "asphalt",
+      "Friction": 1.0,
+      "DriftMultiplier": 1.0,
+      "MaxSpeedMultiplier": 1.0
+    },
+    {
+      "SurfaceId": "dirt",
+      "Friction": 0.82,
+      "DriftMultiplier": 1.45,
+      "MaxSpeedMultiplier": 0.88
+    },
+    {
+      "SurfaceId": "sand",
+      "Friction": 0.68,
+      "DriftMultiplier": 1.65,
+      "MaxSpeedMultiplier": 0.75
+    },
+    {
+      "SurfaceId": "grass",
+      "Friction": 0.45,
+      "DriftMultiplier": 1.8,
+      "MaxSpeedMultiplier": 0.55
+    },
+    {
+      "SurfaceId": "kerb",
+      "Friction": 0.95,
+      "DriftMultiplier": 1.1,
+      "MaxSpeedMultiplier": 0.98
+    }
+  ],
+  "Environment": {
+    "TimeOfDayPreset": "Sunset",
+    "WeatherPreset": "Clear",
+    "SurfaceWetness": 0.0,
+    "bDynamicTime": false
+  },
+  "Generation": {
+    "Seed": 1001,
+    "TargetTrackLength": 3000.0,
+    "Complexity": 0.5,
+    "bGenerateRoad": false,
+    "bGenerateScenery": true,
+    "bGenerateBarriers": true,
+    "bGenerateCheckpoints": true,
+    "bGenerateAILines": true,
+    "bGenerateMinimap": true,
+    "bGenerateThumbnail": true
+  }
+}

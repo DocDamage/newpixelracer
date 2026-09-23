@@ -4,7 +4,7 @@ Pixel Racer is an Unreal Engine track-authoring project: build a top-down racing
 
 ## Repository status
 
-This GitHub repository is currently a landing page for `DocDamage/newpixelracer`. The active Unreal source, assets, and detailed development notes are being maintained in a local workspace while publication is prepared. Paths below describe that complete local workspace and are intentionally shown as code rather than links to files that are not yet published here.
+This repository contains the **v0.4-dev** Unreal project, PixelRacerTools source, starter track/vehicle data, and source art. Phase B editor verification is complete. Generated binaries, caches, autosaves, and local test output are excluded.
 
 ## Requirements
 
@@ -21,9 +21,11 @@ $env:UE58_ROOT = 'D:\Epic\UE_5.8'
 
 ## Build and open
 
-From the full local workspace:
+Clone the repository, then run the helper scripts:
 
 ```powershell
+git clone https://github.com/DocDamage/newpixelracer.git
+cd newpixelracer
 Tools\QuickCheck.bat
 Tools\BuildEditorOnce.bat
 Tools\OpenEditor.bat
@@ -51,6 +53,13 @@ The project keeps editor-only importing code out of the runtime core. Paper2D is
 
 ## Current gate and next work
 
-**Phase B is still pending.** Before implementing the Paper2D importer, manually exercise the existing editor: browser thumbnails/search/categories/rescan and 224 entries; tile and scenery selection and drag/drop; road and width editing; surface/elevation export/reload; all zone tools and vertex dragging; Undo/Redo; and sandbox round-tripping. Fix any v0.4 defects found there first.
+**Phase B passed on 2026-09-23**, using live editor checks and user-assisted gesture verification. The closed-road/zone drawing crash and small-window overflow were fixed and rebuilt. Export → reload → export was byte-identical, including manual width, surface/elevation state, zones, and generated driving metadata. See [development status](Docs/DEVELOPMENT_STATUS.md) and [editor controls](Docs/TRACK_EDITOR_CONTROLS.md).
 
-After that gate passes, the next milestone is the Paper2D import/render adapter: deterministic source-PNG imports, pixel-safe textures, sprite slicing and pivots, reimport behavior, and starter tiles, scenery, vehicles, and VFX. Runtime preview and the complete edit → play → edit loop follow.
+The next milestone is the Paper2D import/render adapter: deterministic source-PNG imports, pixel-safe textures, sprite slicing and pivots, reimport behavior, and starter tiles, scenery, vehicles, and VFX. It has not started. The canvas currently draws authoring primitives; Play Track starts ordinary PIE and does not yet instantiate the edited TrackDocument. Runtime preview and the complete edit → play → edit loop follow.
+
+## Source-art credits
+
+- Wheels in Pixels: supplied under [CC0 with its fallback license](SourceArt/WheelsInPixels/license.txt).
+- Racing UI Kit by Ville Seppänen: [CC BY 4.0 attribution](SourceArt/RacingUIKit/ATTRIBUTION.txt). The original PSD is included.
+
+These asset licenses apply to their respective packs; no project-wide code license is declared.

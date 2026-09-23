@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Pixel Racer .pixeltrack document",
+  "type": "object",
+  "required": [
+    "SchemaVersion",
+    "Metadata",
+    "Topology",
+    "RoadSplines"
+  ],
+  "properties": {
+    "SchemaVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "Metadata": {
+      "type": "object",
+      "required": [
+        "TrackId",
+        "DisplayName"
+      ],
+      "properties": {
+        "TrackId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "DisplayName": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "Topology": {
+      "enum": [
+        "Circuit",
+        "PointToPoint",
+        "Sprint",
+        "Drag",
+        "Branching",
+        "EliminationArena",
+        "OpenDrivingArea"
+      ]
+    },
+    "bInfiniteCanvas": {
+      "type": "boolean"
+    },
+    "ChunkSize": {
+      "type": "integer",
+      "minimum": 256
+    },
+    "RoadSplines": {
+      "type": "array"
+    },
+    "Pieces": {
+      "type": "array"
+    },
+    "ProceduralZones": {
+      "type": "array"
+    },
+    "Checkpoints": {
+      "type": "array"
+    },
+    "GridSlots": {
+      "type": "array"
+    },
+    "RacingLines": {
+      "type": "array"
+    },
+    "SurfaceProfiles": {
+      "type": "array"
+    },
+    "Environment": {
+      "type": "object"
+    },
+    "Generation": {
+      "type": "object"
+    },
+    "Tiles": {
+      "type": "array"
+    }
+  }
+}

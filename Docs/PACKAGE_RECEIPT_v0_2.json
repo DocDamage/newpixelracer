@@ -1,0 +1,23 @@
+{
+  "milestone": "Pixel Racer Track Editor v0.2 Source",
+  "engine": "Unreal Engine 5.8",
+  "quickCheck": "0 errors, 0 warnings",
+  "fileCount": 288,
+  "trackedSourceAndDataFileCount": 59,
+  "modules": [
+    "PixelRacerCore",
+    "PixelRacerRuntimeEditor",
+    "PixelRacerTrackEditor"
+  ],
+  "starterTracks": 4,
+  "starterVehicles": [
+    "Hachiroku_Drifter",
+    "Bologna_Superbike"
+  ],
+  "wheelsInPixelsPngCount": 224,
+  "notes": [
+    "No Unreal compile result is claimed because the UE 5.8 engine/toolchain is not present in this environment.",
+    "Normal track editing is designed around data/autosave/PIE rather than cook/package/test gates.",
+    "Paper2D+ remains optional."
+  ]
+}

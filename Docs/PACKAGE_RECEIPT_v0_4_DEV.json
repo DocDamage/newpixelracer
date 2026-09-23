@@ -1,0 +1,67 @@
+{
+  "packageVersion": "0.4.0-dev",
+  "engineTarget": "Unreal Engine 5.8.3",
+  "project": "PixelRacer/PixelRacer.uproject",
+  "implementedMilestone": "Manifest-backed Asset Browser + rectangle/polygon/freehand procedural-zone editing",
+  "validation": {
+    "quickCheck": "0 errors, 0 warnings",
+    "pythonTools": "py_compile passed",
+    "trackEditorDelimiterBalance": "passed during packaging",
+    "unrealCompile": "NOT RUN - Unreal Engine 5.8.3 unavailable in build environment"
+  },
+  "assetCatalog": {
+    "wheelsInPixelsAssets": 224,
+    "vehicleSheets": 195,
+    "tilesets": 20,
+    "environmentPieces": 7,
+    "vfxSheets": 2
+  },
+  "sourceFileCount": 297,
+  "criticalFiles": [
+    {
+      "path": "Plugins/PixelRacerTools/PixelRacerTools.uplugin",
+      "bytes": 689,
+      "sha256": "9d84e31736d4549ef43af99deae1fd9eda50c722bbbf10ce9f566a18fa3a642a"
+    },
+    {
+      "path": "Plugins/PixelRacerTools/Source/PixelRacerTrackEditor/PixelRacerTrackEditor.Build.cs",
+      "bytes": 727,
+      "sha256": "e02a7b4e5fbff04284ad7b043b2d76f6355f2e6439b47dadce674fb263d8b8ee"
+    },
+    {
+      "path": "Plugins/PixelRacerTools/Source/PixelRacerTrackEditor/Private/SPixelRacerAssetBrowser.h",
+      "bytes": 2420,
+      "sha256": "50e93f53562f1df352ca915c333b45c5d730b0285908adda1ffc14f06ac51685"
+    },
+    {
+      "path": "Plugins/PixelRacerTools/Source/PixelRacerTrackEditor/Private/SPixelRacerAssetBrowser.cpp",
+      "bytes": 17779,
+      "sha256": "ba0b430c4e22dd91fcc0ebf8923aa30e5e1bd6484a8971e152ac2189e56e3f8f"
+    },
+    {
+      "path": "Plugins/PixelRacerTools/Source/PixelRacerTrackEditor/Private/SPixelRacerTrackCanvas.h",
+      "bytes": 4981,
+      "sha256": "ef026268812aefa5cc788e3a193358dc034e39e8917cdf64aa86e806a574e77f"
+    },
+    {
+      "path": "Plugins/PixelRacerTools/Source/PixelRacerTrackEditor/Private/SPixelRacerTrackCanvas.cpp",
+      "bytes": 38984,
+      "sha256": "011fa7b6dfff25f1c1421d1b9f4546e7f3aecf62de3b37b3d6aebc5d445c725a"
+    },
+    {
+      "path": "Plugins/PixelRacerTools/Source/PixelRacerTrackEditor/Public/PixelRacerTrackEditorModule.h",
+      "bytes": 1829,
+      "sha256": "6c877c1854095955ea384aa1b333f223639167cc3f814fcd9faa8da83816828a"
+    },
+    {
+      "path": "Plugins/PixelRacerTools/Source/PixelRacerTrackEditor/Private/PixelRacerTrackEditorModule.cpp",
+      "bytes": 30800,
+      "sha256": "9a2e7b70c885b54ea0b203e2762505f32a486fcf19ec811e68dcf350b3239143"
+    },
+    {
+      "path": "Tools/quick_check.py",
+      "bytes": 8210,
+      "sha256": "313b205c8f6e379600777361c7e37325233f729af06ad5cd8ec6a86810a35464"
+    }
+  ]
+}

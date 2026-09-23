@@ -1,0 +1,35 @@
+{
+  "FileVersion": 3,
+  "Version": 4,
+  "VersionName": "0.4.0-dev",
+  "FriendlyName": "Pixel Racer Tools",
+  "Description": "Runtime track data, validation, JSON portability, and editor tooling for Pixel Racer.",
+  "Category": "Pixel Racer",
+  "CreatedBy": "Pixel Racer",
+  "CanContainContent": true,
+  "IsBetaVersion": true,
+  "Installed": false,
+  "Plugins": [
+    {
+      "Name": "Paper2D",
+      "Enabled": true
+    }
+  ],
+  "Modules": [
+    {
+      "Name": "PixelRacerCore",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    },
+    {
+      "Name": "PixelRacerTrackEditor",
+      "Type": "Editor",
+      "LoadingPhase": "Default"
+    },
+    {
+      "Name": "PixelRacerRuntimeEditor",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ]
+}

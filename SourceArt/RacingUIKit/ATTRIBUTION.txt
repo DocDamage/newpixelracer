@@ -1,0 +1,5 @@
+Racing UI Kit by Ville Seppänen
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+Original archive supplied by the Pixel Racer project owner.
+
+Retain attribution when redistributing derived UI assets.

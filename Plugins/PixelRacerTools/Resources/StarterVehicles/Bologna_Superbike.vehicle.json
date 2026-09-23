@@ -1,0 +1,29 @@
+{
+  "VehicleId": "Bologna_Superbike",
+  "DisplayName": "Bologna Superbike V4",
+  "Type": "Motorcycle",
+  "Category": "Superbike",
+  "SourceSpriteSheet": "SourceArt/WheelsInPixels/Bikes/Bologna_Superbike/Bologna_Superbike.png",
+  "DirectionCount": 16,
+  "SpriteCellSize": {
+    "X": 46,
+    "Y": 54
+  },
+  "Stats": {
+    "Speed": 96,
+    "Acceleration": 98,
+    "Handling": 95,
+    "Drift": 65,
+    "Boost": 96,
+    "Weight": 35
+  },
+  "ColorVariants": [
+    "default",
+    "black",
+    "blue",
+    "green",
+    "pink",
+    "purple",
+    "white"
+  ]
+}
