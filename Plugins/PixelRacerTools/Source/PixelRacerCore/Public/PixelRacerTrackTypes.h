@@ -137,6 +137,9 @@ struct PIXELRACERCORE_API FPixelRacerTilePlacement
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Track")
     FString AssetId;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Track", meta=(ClampMin="0"))
+    int32 TileIndex = 0;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Track")
     int32 LayerIndex = 0;
 

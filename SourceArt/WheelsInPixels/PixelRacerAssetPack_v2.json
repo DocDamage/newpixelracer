@@ -2026,13 +2026,23 @@
       "path": "VFX/Nitro/nitroVFX-Sheet.png",
       "width": 448,
       "height": 512,
-      "role": "vfx_sheet"
+      "role": "vfx_sheet",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "frameColumns": 7,
+      "frameRows": 8,
+      "frameCount": 56
     },
     {
       "path": "VFX/Smoke/Smoke-Sheet.png",
       "width": 192,
       "height": 320,
-      "role": "vfx_sheet"
+      "role": "vfx_sheet",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "frameColumns": 3,
+      "frameRows": 5,
+      "frameCount": 15
     }
   ],
   "authoring": {

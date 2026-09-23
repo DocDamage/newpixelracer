@@ -1,16 +1,53 @@
 #include "SPixelRacerTrackCanvas.h"
 
+#include "Engine/Texture2D.h"
 #include "InputCoreTypes.h"
 #include "Layout/Clipping.h"
 #include "Misc/Paths.h"
+#include "PaperSprite.h"
+#include "PaperTileSet.h"
 #include "PixelRacerTrackAuthoringLibrary.h"
 #include "PixelRacerTrackLibrary.h"
 #include "SPixelRacerAssetBrowser.h"
 #include "Rendering/DrawElements.h"
 #include "Styling/AppStyle.h"
+#include "Styling/SlateBrush.h"
 
 namespace PixelRacerCanvas
 {
+    static FSlateBrush MakeSourceRegionBrush(
+        const FSlateBrush* FallbackBrush,
+        UTexture2D* Texture,
+        const FIntPoint& SourceUV,
+        const FIntPoint& SourceSize,
+        const FIntPoint& TextureSize)
+    {
+        FSlateBrush Brush;
+        if (Texture != nullptr)
+        {
+            Brush.SetResourceObject(Texture);
+        }
+        else if (FallbackBrush != nullptr)
+        {
+            Brush = *FallbackBrush;
+        }
+
+        Brush.DrawAs = ESlateBrushDrawType::Image;
+        Brush.Tiling = ESlateBrushTileType::NoTile;
+        Brush.TintColor = FSlateColor(FLinearColor::White);
+        if (TextureSize.X > 0 && TextureSize.Y > 0 && SourceSize.X > 0 && SourceSize.Y > 0)
+        {
+            const FVector2f UVMin(
+                static_cast<float>(SourceUV.X) / static_cast<float>(TextureSize.X),
+                static_cast<float>(SourceUV.Y) / static_cast<float>(TextureSize.Y));
+            const FVector2f UVMax(
+                static_cast<float>(SourceUV.X + SourceSize.X) / static_cast<float>(TextureSize.X),
+                static_cast<float>(SourceUV.Y + SourceSize.Y) / static_cast<float>(TextureSize.Y));
+            Brush.SetUVRegion(FBox2f(UVMin, UVMax));
+        }
+        return Brush;
+    }
+
     static float DistancePointToSegment(const FVector2D& Point, const FVector2D& A, const FVector2D& B, FVector2D& OutClosest)
     {
         const FVector2D Delta = B - A;
@@ -197,12 +234,18 @@ bool SPixelRacerTrackCanvas::SetActiveAsset(const FString& AssetId, const FStrin
 
     if (Role == TEXT("tileset"))
     {
+        if (ActiveTile != AssetId)
+        {
+            Session.ActiveTileIndex = 0;
+        }
         ActiveTile = AssetId;
+        Invalidate(EInvalidateWidgetReason::Paint);
         return true;
     }
     if (Role == TEXT("environment_piece"))
     {
         ActivePiece = AssetId;
+        Invalidate(EInvalidateWidgetReason::Paint);
         return true;
     }
 
@@ -211,8 +254,120 @@ bool SPixelRacerTrackCanvas::SetActiveAsset(const FString& AssetId, const FStrin
     return Role == TEXT("vehicle_sprite_sheet") || Role == TEXT("vfx_sheet") || Role == TEXT("sprite");
 }
 
+void SPixelRacerTrackCanvas::SetAssetPreviewData(const TArray<FPixelRacerAssetPreviewData>& InPreviewData)
+{
+    AssetPreviewData.Reset();
+    LoadedSourceBrushCache.Reset();
+    LoadedSpriteCache.Reset();
+    LoadedTileSetCache.Reset();
+    for (const FPixelRacerAssetPreviewData& Preview : InPreviewData)
+    {
+        if (!Preview.AssetId.IsEmpty())
+        {
+            AssetPreviewData.Add(Preview.AssetId, Preview);
+        }
+    }
+    Invalidate(EInvalidateWidgetReason::Paint);
+}
+
+int32 SPixelRacerTrackCanvas::GetActiveTileCount() const
+{
+    const FPixelRacerAssetPreviewData* Preview = AssetPreviewData.Find(ActiveTile);
+    return Preview != nullptr ? FMath::Max(Preview->TileCount, 1) : 1;
+}
+
+TSharedPtr<FSlateDynamicImageBrush> SPixelRacerTrackCanvas::GetPreviewSourceBrush(const FString& AssetId) const
+{
+    const FPixelRacerAssetPreviewData* Preview = AssetPreviewData.Find(AssetId);
+    if (Preview == nullptr)
+    {
+        return nullptr;
+    }
+    if (Preview->SourceBrush.IsValid())
+    {
+        return Preview->SourceBrush;
+    }
+    if (const TSharedPtr<FSlateDynamicImageBrush>* CachedBrush = LoadedSourceBrushCache.Find(AssetId); CachedBrush && CachedBrush->IsValid())
+    {
+        return *CachedBrush;
+    }
+    if (!FPaths::FileExists(Preview->SourceFile))
+    {
+        return nullptr;
+    }
+
+    TSharedPtr<FSlateDynamicImageBrush> Brush = MakeShared<FSlateDynamicImageBrush>(
+        FName(*Preview->SourceFile),
+        FVector2D(54.0f, 54.0f),
+        FLinearColor::White,
+        ESlateBrushTileType::NoTile,
+        ESlateBrushImageType::FullColor);
+    LoadedSourceBrushCache.Add(AssetId, Brush);
+    return Brush;
+}
+
+void SPixelRacerTrackCanvas::CycleActiveTileIndex(const int32 Delta)
+{
+    const int32 TileCount = GetActiveTileCount();
+    if (TileCount <= 1 || Delta == 0)
+    {
+        return;
+    }
+    Session.ActiveTileIndex = (Session.ActiveTileIndex + Delta + TileCount) % TileCount;
+    Invalidate(EInvalidateWidgetReason::Paint);
+}
+
+UPaperSprite* SPixelRacerTrackCanvas::LoadPreviewSprite(const FString& AssetId) const
+{
+    const FPixelRacerAssetPreviewData* Preview = AssetPreviewData.Find(AssetId);
+    if (Preview == nullptr || Preview->SpriteObjectPath.IsEmpty())
+    {
+        return nullptr;
+    }
+    if (const TWeakObjectPtr<UPaperSprite>* CachedSprite = LoadedSpriteCache.Find(AssetId); CachedSprite && CachedSprite->IsValid())
+    {
+        return CachedSprite->Get();
+    }
+
+    UPaperSprite* Sprite = LoadObject<UPaperSprite>(nullptr, *Preview->SpriteObjectPath);
+    if (Sprite != nullptr)
+    {
+        LoadedSpriteCache.Add(AssetId, Sprite);
+    }
+    return Sprite;
+}
+
+UPaperTileSet* SPixelRacerTrackCanvas::LoadPreviewTileSet(const FString& AssetId) const
+{
+    const FPixelRacerAssetPreviewData* Preview = AssetPreviewData.Find(AssetId);
+    if (Preview == nullptr || Preview->TileSetObjectPath.IsEmpty())
+    {
+        return nullptr;
+    }
+    if (const TWeakObjectPtr<UPaperTileSet>* CachedTileSet = LoadedTileSetCache.Find(AssetId); CachedTileSet && CachedTileSet->IsValid())
+    {
+        return CachedTileSet->Get();
+    }
+
+    UPaperTileSet* TileSet = LoadObject<UPaperTileSet>(nullptr, *Preview->TileSetObjectPath);
+    if (TileSet != nullptr)
+    {
+        LoadedTileSetCache.Add(AssetId, TileSet);
+    }
+    return TileSet;
+}
+
 FString SPixelRacerTrackCanvas::GetActiveAssetSummary() const
 {
+    if (LastSelectedAssetRole == TEXT("tileset"))
+    {
+        return FString::Printf(
+            TEXT("%s (%s), tile %d/%d  [ and ] to change"),
+            *LastSelectedAsset,
+            *LastSelectedAssetRole,
+            Session.ActiveTileIndex + 1,
+            GetActiveTileCount());
+    }
     return FString::Printf(TEXT("%s (%s)"), *LastSelectedAsset, *LastSelectedAssetRole);
 }
 
@@ -446,7 +601,7 @@ void SPixelRacerTrackCanvas::ApplyTileAt(const FVector2D& LocalPosition, const b
     }
     else
     {
-        UPixelRacerTrackAuthoringLibrary::PaintTile(Session.Document, Cell, ActiveTile, 0, 0);
+        UPixelRacerTrackAuthoringLibrary::PaintTile(Session.Document, Cell, ActiveTile, 0, 0, Session.ActiveTileIndex);
     }
     Invalidate(EInvalidateWidgetReason::Paint);
 }
@@ -816,6 +971,16 @@ FReply SPixelRacerTrackCanvas::OnMouseMove(const FGeometry& MyGeometry, const FP
 FReply SPixelRacerTrackCanvas::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
 {
     const FKey Key = InKeyEvent.GetKey();
+    if (Mode == EPixelRacerAuthoringMode::TilePaint && Key == EKeys::LeftBracket)
+    {
+        CycleActiveTileIndex(-1);
+        return FReply::Handled();
+    }
+    if (Mode == EPixelRacerAuthoringMode::TilePaint && Key == EKeys::RightBracket)
+    {
+        CycleActiveTileIndex(1);
+        return FReply::Handled();
+    }
     if (InKeyEvent.IsControlDown() && Key == EKeys::Z)
     {
         const bool bRedo = InKeyEvent.IsShiftDown();
@@ -922,8 +1087,60 @@ int32 SPixelRacerTrackCanvas::OnPaint(const FPaintArgs& Args, const FGeometry& A
     for (const FPixelRacerTilePlacement& Tile : Session.Document.Tiles)
     {
         const FVector2D Position(Tile.Cell.X * GridSize, Tile.Cell.Y * GridSize);
-        FSlateDrawElement::MakeBox(OutDrawElements, DrawLayer, AllottedGeometry.ToPaintGeometry(FVector2D(GridSize, GridSize), FSlateLayoutTransform(Position)),
-            FAppStyle::GetBrush("WhiteBrush"), ESlateDrawEffect::None, FLinearColor(0.17f, 0.20f, 0.24f, 0.9f));
+        const FPixelRacerAssetPreviewData* Preview = AssetPreviewData.Find(Tile.AssetId);
+        if (Preview != nullptr && Preview->TileWidth > 0 && Preview->TileHeight > 0 && Preview->Columns > 0 && Preview->Rows > 0)
+        {
+            const TSharedPtr<FSlateDynamicImageBrush> SourceBrush = GetPreviewSourceBrush(Tile.AssetId);
+            UPaperTileSet* TileSet = LoadPreviewTileSet(Tile.AssetId);
+            UTexture2D* Texture = TileSet != nullptr ? TileSet->GetTileSheetTexture() : nullptr;
+            FIntPoint TileSize(Preview->TileWidth, Preview->TileHeight);
+            const int32 TileCount = TileSet != nullptr ? TileSet->GetTileCount() : Preview->TileCount;
+            const int32 SafeTileIndex = FMath::Clamp(Tile.TileIndex, 0, FMath::Max(TileCount - 1, 0));
+            FIntPoint SourceUV(
+                (SafeTileIndex % Preview->Columns) * Preview->TileWidth,
+                (SafeTileIndex / Preview->Columns) * Preview->TileHeight);
+            if (TileSet != nullptr && SafeTileIndex < TileSet->GetTileCount())
+            {
+                TileSize = TileSet->GetTileSize();
+                FVector2D TileUV = FVector2D::ZeroVector;
+                if (TileSet->GetTileUV(SafeTileIndex, TileUV))
+                {
+                    SourceUV = FIntPoint(FMath::RoundToInt(TileUV.X), FMath::RoundToInt(TileUV.Y));
+                }
+            }
+
+            const FIntPoint TextureSize = Texture != nullptr
+                ? Texture->GetImportedSize()
+                : FIntPoint(Preview->Width, Preview->Height);
+            FSlateBrush Brush = PixelRacerCanvas::MakeSourceRegionBrush(
+                SourceBrush.Get(),
+                Texture,
+                SourceUV,
+                TileSize,
+                TextureSize);
+            Brush.SetImageSize(FVector2D(GridSize, GridSize));
+            const float Angle = FMath::DegreesToRadians(static_cast<float>(Tile.RotationSteps * 90));
+            if (Texture != nullptr || SourceBrush.IsValid())
+            {
+                FSlateDrawElement::MakeRotatedBox(
+                    OutDrawElements,
+                    DrawLayer,
+                    AllottedGeometry.ToPaintGeometry(FVector2D(GridSize, GridSize), FSlateLayoutTransform(Position)),
+                    &Brush,
+                    ESlateDrawEffect::None,
+                    Angle);
+            }
+            else
+            {
+                FSlateDrawElement::MakeBox(OutDrawElements, DrawLayer, AllottedGeometry.ToPaintGeometry(FVector2D(GridSize, GridSize), FSlateLayoutTransform(Position)),
+                    FAppStyle::GetBrush("WhiteBrush"), ESlateDrawEffect::None, FLinearColor(0.17f, 0.20f, 0.24f, 0.9f));
+            }
+        }
+        else
+        {
+            FSlateDrawElement::MakeBox(OutDrawElements, DrawLayer, AllottedGeometry.ToPaintGeometry(FVector2D(GridSize, GridSize), FSlateLayoutTransform(Position)),
+                FAppStyle::GetBrush("WhiteBrush"), ESlateDrawEffect::None, FLinearColor(0.17f, 0.20f, 0.24f, 0.9f));
+        }
     }
 
     for (int32 SplineIndex = 0; SplineIndex < Session.Document.RoadSplines.Num(); ++SplineIndex)
@@ -970,9 +1187,59 @@ int32 SPixelRacerTrackCanvas::OnPaint(const FPaintArgs& Args, const FGeometry& A
 
     for (const FPixelRacerPiecePlacement& Piece : Session.Document.Pieces)
     {
-        const FVector2D P = TrackToCanvas(Piece.Transform.GetLocation()) - FVector2D(5.0f, 5.0f);
-        FSlateDrawElement::MakeBox(OutDrawElements, DrawLayer + 5, AllottedGeometry.ToPaintGeometry(FVector2D(10.0f, 10.0f), FSlateLayoutTransform(P)),
-            FAppStyle::GetBrush("WhiteBrush"), ESlateDrawEffect::None, Piece.bGenerated ? FLinearColor::Yellow : FLinearColor::Red);
+        const FPixelRacerAssetPreviewData* Preview = AssetPreviewData.Find(Piece.AssetId);
+        const TSharedPtr<FSlateDynamicImageBrush> SourceBrush = GetPreviewSourceBrush(Piece.AssetId);
+        UPaperSprite* Sprite = LoadPreviewSprite(Piece.AssetId);
+        UTexture2D* Texture = Sprite != nullptr ? Sprite->GetSourceTexture() : nullptr;
+        if (Preview != nullptr && Preview->Width > 0 && Preview->Height > 0)
+        {
+            FIntPoint SourceUV(0, 0);
+            FIntPoint SourceSize(Preview->Width, Preview->Height);
+            if (Sprite != nullptr)
+            {
+                const FVector2D SpriteUV = Sprite->GetSourceUV();
+                const FVector2D SpriteSize = Sprite->GetSourceSize();
+                SourceUV = FIntPoint(FMath::RoundToInt(SpriteUV.X), FMath::RoundToInt(SpriteUV.Y));
+                SourceSize = FIntPoint(FMath::RoundToInt(SpriteSize.X), FMath::RoundToInt(SpriteSize.Y));
+            }
+            const FIntPoint TextureSize = Texture != nullptr
+                ? Texture->GetImportedSize()
+                : FIntPoint(Preview->Width, Preview->Height);
+            const FVector2D DrawSize = FVector2D(SourceSize) * (GridSize / 64.0f) * FVector2D(
+                FMath::Abs(Piece.Transform.GetScale3D().X),
+                FMath::Abs(Piece.Transform.GetScale3D().Y));
+            const FVector2D Position = TrackToCanvas(Piece.Transform.GetLocation()) - DrawSize * 0.5f;
+            FSlateBrush Brush = PixelRacerCanvas::MakeSourceRegionBrush(
+                SourceBrush.Get(),
+                Texture,
+                SourceUV,
+                SourceSize,
+                TextureSize);
+            Brush.SetImageSize(DrawSize);
+            const float Angle = FMath::DegreesToRadians(Piece.Transform.Rotator().Yaw);
+            if (Texture != nullptr || SourceBrush.IsValid())
+            {
+                FSlateDrawElement::MakeRotatedBox(
+                    OutDrawElements,
+                    DrawLayer + 5,
+                    AllottedGeometry.ToPaintGeometry(DrawSize, FSlateLayoutTransform(Position)),
+                    &Brush,
+                    ESlateDrawEffect::None,
+                    Angle);
+            }
+            else
+            {
+                const FVector2D P = TrackToCanvas(Piece.Transform.GetLocation()) - FVector2D(5.0f, 5.0f);
+                FSlateDrawElement::MakeBox(OutDrawElements, DrawLayer + 5, AllottedGeometry.ToPaintGeometry(FVector2D(10.0f, 10.0f), FSlateLayoutTransform(P)),
+                    FAppStyle::GetBrush("WhiteBrush"), ESlateDrawEffect::None, Piece.bGenerated ? FLinearColor::Yellow : FLinearColor::Red);
+            }
+        }
+        else
+        {
+            const FVector2D P = TrackToCanvas(Piece.Transform.GetLocation()) - FVector2D(5.0f, 5.0f);
+            FSlateDrawElement::MakeBox(OutDrawElements, DrawLayer + 5, AllottedGeometry.ToPaintGeometry(FVector2D(10.0f, 10.0f), FSlateLayoutTransform(P)),
+                FAppStyle::GetBrush("WhiteBrush"), ESlateDrawEffect::None, Piece.bGenerated ? FLinearColor::Yellow : FLinearColor::Red);
+        }
     }
 
     for (int32 ZoneIndex = 0; ZoneIndex < Session.Document.ProceduralZones.Num(); ++ZoneIndex)

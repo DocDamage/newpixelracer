@@ -233,9 +233,10 @@ bool UPixelRacerTrackAuthoringLibrary::PaintTile(
     const FIntPoint& Cell,
     const FString& AssetId,
     const int32 LayerIndex,
-    const int32 RotationSteps)
+    const int32 RotationSteps,
+    const int32 TileIndex)
 {
-    if (AssetId.IsEmpty())
+    if (AssetId.IsEmpty() || TileIndex < 0)
     {
         return false;
     }
@@ -245,6 +246,7 @@ bool UPixelRacerTrackAuthoringLibrary::PaintTile(
         if (Existing.Cell == Cell && Existing.LayerIndex == LayerIndex)
         {
             Existing.AssetId = AssetId;
+            Existing.TileIndex = TileIndex;
             Existing.RotationSteps = ((RotationSteps % 4) + 4) % 4;
             Existing.bManualOverride = true;
             return true;
@@ -254,6 +256,7 @@ bool UPixelRacerTrackAuthoringLibrary::PaintTile(
     FPixelRacerTilePlacement& Tile = Document.Tiles.AddDefaulted_GetRef();
     Tile.Cell = Cell;
     Tile.AssetId = AssetId;
+    Tile.TileIndex = TileIndex;
     Tile.LayerIndex = LayerIndex;
     Tile.RotationSteps = ((RotationSteps % 4) + 4) % 4;
     Tile.bManualOverride = true;

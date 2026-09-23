@@ -32,7 +32,13 @@ APixelRacerArcadeVehiclePawn::APixelRacerArcadeVehiclePawn()
     Camera->ProjectionMode = ECameraProjectionMode::Orthographic;
     Camera->OrthoWidth = 1600.0f;
 
-    LastSafeTransform = FTransform::Identity;
+    ResetTransform = FTransform::Identity;
+}
+
+void APixelRacerArcadeVehiclePawn::BeginPlay()
+{
+    Super::BeginPlay();
+    ResetTransform = GetActorTransform();
 }
 
 void APixelRacerArcadeVehiclePawn::Tick(const float DeltaSeconds)
@@ -42,11 +48,6 @@ void APixelRacerArcadeVehiclePawn::Tick(const float DeltaSeconds)
     if (DeltaSeconds <= 0.0f)
     {
         return;
-    }
-
-    if (LastSafeTransform.Equals(FTransform::Identity))
-    {
-        LastSafeTransform = GetActorTransform();
     }
 
     const float SpeedStat = VehicleDefinition ? VehicleDefinition->Stats.Speed : 80.0f;
@@ -89,11 +90,6 @@ void APixelRacerArcadeVehiclePawn::Tick(const float DeltaSeconds)
         const FVector2D Normal(Hit.Normal.X, Hit.Normal.Y);
         Velocity2D -= Normal * FVector2D::DotProduct(Velocity2D, Normal) * 1.4f;
     }
-    else
-    {
-        LastSafeTransform = GetActorTransform();
-    }
-
     CameraArm->SetUsingAbsoluteRotation(!bRotateCameraWithVehicle);
     if (bRotateCameraWithVehicle)
     {
@@ -154,8 +150,11 @@ void APixelRacerArcadeVehiclePawn::SetDriftReleased()
 
 void APixelRacerArcadeVehiclePawn::ResetVehicle()
 {
-    SetActorTransform(LastSafeTransform, false, nullptr, ETeleportType::ResetPhysics);
+    SetActorTransform(ResetTransform, false, nullptr, ETeleportType::ResetPhysics);
     Velocity2D = FVector2D::ZeroVector;
+    ThrottleInput = 0.0f;
+    SteerInput = 0.0f;
+    bDriftHeld = false;
 }
 
 void APixelRacerArcadeVehiclePawn::UpdateDirectionalSprite()

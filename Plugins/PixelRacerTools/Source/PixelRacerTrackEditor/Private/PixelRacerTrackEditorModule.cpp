@@ -1,15 +1,21 @@
 #include "PixelRacerTrackEditorModule.h"
 
 #include "Editor.h"
+#include "Engine/Engine.h"
+#include "Engine/World.h"
 #include "HAL/FileManager.h"
 #include "HAL/PlatformProcess.h"
 #include "Framework/Docking/TabManager.h"
 #include "Framework/Notifications/NotificationManager.h"
 #include "Interfaces/IPluginManager.h"
+#include "GameFramework/PlayerController.h"
 #include "Kismet2/DebuggerCommands.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "PixelRacerArcadeVehiclePawn.h"
 #include "PixelRacerTrackLibrary.h"
+#include "PixelRacerTrackPreviewActor.h"
+#include "PixelRacerVehicleDefinition.h"
 #include "PlayInEditorDataTypes.h"
 #include "SPixelRacerTrackCanvas.h"
 #include "SPixelRacerAssetBrowser.h"
@@ -29,10 +35,26 @@
 
 #define LOCTEXT_NAMESPACE "FPixelRacerTrackEditorModule"
 
+namespace
+{
+    static void ApplyVehicleAssetSelection(
+        const FPixelRacerAssetPreviewData& Preview,
+        FPixelRacerTrackPreviewAssetReference& OutVehicleReference)
+    {
+        OutVehicleReference.AssetId = Preview.AssetId;
+        OutVehicleReference.DisplayName = Preview.DisplayName;
+        OutVehicleReference.DirectionCount = Preview.DirectionCount;
+        OutVehicleReference.VehicleDefinitionObjectPath = FSoftObjectPath(Preview.VehicleDefinitionObjectPath);
+    }
+}
+
 const FName FPixelRacerTrackEditorModule::TrackEditorTabName(TEXT("PixelRacerTrackEditor"));
 
 void FPixelRacerTrackEditorModule::StartupModule()
 {
+    PostPIEStartedHandle = FEditorDelegates::PostPIEStarted.AddRaw(this, &FPixelRacerTrackEditorModule::HandlePostPIEStarted);
+    EndPIEHandle = FEditorDelegates::EndPIE.AddRaw(this, &FPixelRacerTrackEditorModule::HandleEndPIE);
+
     FGlobalTabmanager::Get()->RegisterNomadTabSpawner(
         TrackEditorTabName,
         FOnSpawnTab::CreateRaw(this, &FPixelRacerTrackEditorModule::SpawnTrackEditorTab))
@@ -46,6 +68,20 @@ void FPixelRacerTrackEditorModule::StartupModule()
 
 void FPixelRacerTrackEditorModule::ShutdownModule()
 {
+    if (PostPIEStartedHandle.IsValid())
+    {
+        FEditorDelegates::PostPIEStarted.Remove(PostPIEStartedHandle);
+        PostPIEStartedHandle.Reset();
+    }
+    if (EndPIEHandle.IsValid())
+    {
+        FEditorDelegates::EndPIE.Remove(EndPIEHandle);
+        EndPIEHandle.Reset();
+    }
+    bPreviewPending = false;
+    bHasSelectedVehicle = false;
+    bPendingPreviewHasVehicle = false;
+    PendingPreviewAssets.Reset();
     AssetBrowser.Reset();
     TrackCanvas.Reset();
     UToolMenus::UnRegisterStartupCallback(this);
@@ -77,7 +113,9 @@ TSharedRef<SDockTab> FPixelRacerTrackEditorModule::SpawnTrackEditorTab(const FSp
     SAssignNew(TrackCanvas, SPixelRacerTrackCanvas);
     TrackCanvas->SetMode(ActiveMode);
     SAssignNew(AssetBrowser, SPixelRacerAssetBrowser)
-        .OnAssetChosen(FOnPixelRacerAssetChosen::CreateRaw(this, &FPixelRacerTrackEditorModule::HandleAssetChosen));
+        .OnAssetChosen(FOnPixelRacerAssetChosen::CreateRaw(this, &FPixelRacerTrackEditorModule::HandleAssetChosen))
+        .OnManifestsReloaded(FSimpleDelegate::CreateRaw(this, &FPixelRacerTrackEditorModule::HandleAssetBrowserManifestsReloaded));
+    TrackCanvas->SetAssetPreviewData(AssetBrowser->GetPreviewData());
 
     auto ModeButton = [this](const FText& Label, EPixelRacerAuthoringMode Mode)
     {
@@ -306,7 +344,7 @@ TSharedRef<SDockTab> FPixelRacerTrackEditorModule::SpawnTrackEditorTab(const FSp
                 [
                     SNew(SButton)
                     .Text(LOCTEXT("PlayTrack", "Play Track (PIE)"))
-                    .ToolTipText(LOCTEXT("PlayTrackTip", "Starts normal in-process Play In Editor. No cook or packaged build."))
+                    .ToolTipText(LOCTEXT("PlayTrackTip", "Select and import a vehicle in the Asset Browser to drive this track. Use WASD or arrows to steer, Space to drift, and R to reset to the start. Starts normal in-process PIE."))
                     .OnClicked_Raw(this, &FPixelRacerTrackEditorModule::HandlePlayTrack)
                 ]
                 + SVerticalBox::Slot().AutoHeight().Padding(0.0f, 12.0f)
@@ -512,6 +550,29 @@ void FPixelRacerTrackEditorModule::HandleAssetChosen(const FString& AssetId, con
         ActiveMode = EPixelRacerAuthoringMode::PiecePlacement;
         TrackCanvas->SetMode(ActiveMode);
     }
+
+    bHasSelectedVehicle = false;
+    if (Role == TEXT("vehicle_sprite_sheet") && AssetBrowser.IsValid())
+    {
+        for (const FPixelRacerAssetPreviewData& Preview : AssetBrowser->GetPreviewData())
+        {
+            if (Preview.AssetId == AssetId && Preview.Role == Role)
+            {
+                ApplyVehicleAssetSelection(Preview, SelectedVehicleReference);
+                bHasSelectedVehicle = SelectedVehicleReference.VehicleDefinitionObjectPath.IsValid();
+                break;
+            }
+        }
+    }
+}
+
+void FPixelRacerTrackEditorModule::HandleAssetBrowserManifestsReloaded()
+{
+    bHasSelectedVehicle = false;
+    if (TrackCanvas.IsValid() && AssetBrowser.IsValid())
+    {
+        TrackCanvas->SetAssetPreviewData(AssetBrowser->GetPreviewData());
+    }
 }
 
 FText FPixelRacerTrackEditorModule::GetActiveAssetText() const
@@ -652,16 +713,156 @@ FReply FPixelRacerTrackEditorModule::HandleOpenStarterTracks()
 
 FReply FPixelRacerTrackEditorModule::HandlePlayTrack()
 {
+    bPreviewPending = TrackCanvas.IsValid();
+    bPendingPreviewHasVehicle = TrackCanvas.IsValid() && bHasSelectedVehicle;
+    if (bPendingPreviewHasVehicle)
+    {
+        UPixelRacerVehicleDefinition* VehicleDefinition = Cast<UPixelRacerVehicleDefinition>(
+            SelectedVehicleReference.VehicleDefinitionObjectPath.TryLoad());
+        if (VehicleDefinition == nullptr ||
+            VehicleDefinition->DirectionalSprites.Num() != SelectedVehicleReference.DirectionCount ||
+            VehicleDefinition->DirectionalSprites.Contains(nullptr))
+        {
+            bPreviewPending = false;
+            bPendingPreviewHasVehicle = false;
+            ShowNotification(
+                FText::Format(
+                    LOCTEXT("VehicleDefinitionNeedsImport", "Import {0} in the Asset Browser before driving."),
+                    FText::FromString(SelectedVehicleReference.DisplayName)),
+                false);
+            return FReply::Handled();
+        }
+    }
+    PendingPreviewAssets.Reset();
+    if (bPendingPreviewHasVehicle)
+    {
+        PendingPreviewVehicleReference = SelectedVehicleReference;
+    }
+    if (bPreviewPending)
+    {
+        PendingPreviewDocument = TrackCanvas->GetDocument();
+        if (AssetBrowser.IsValid())
+        {
+            const TArray<FPixelRacerAssetPreviewData> PreviewData = AssetBrowser->GetPreviewData();
+            PendingPreviewAssets.Reserve(PreviewData.Num());
+            for (const FPixelRacerAssetPreviewData& Preview : PreviewData)
+            {
+                FPixelRacerTrackPreviewAssetReference& Reference = PendingPreviewAssets.AddDefaulted_GetRef();
+                Reference.AssetId = Preview.AssetId;
+                Reference.DisplayName = Preview.DisplayName;
+                Reference.SpriteObjectPath = FSoftObjectPath(Preview.SpriteObjectPath);
+                Reference.TileSetObjectPath = FSoftObjectPath(Preview.TileSetObjectPath);
+                Reference.TileSize = FIntPoint(Preview.TileWidth, Preview.TileHeight);
+                Reference.ImageSize = FIntPoint(Preview.Width, Preview.Height);
+                Reference.DirectionCount = Preview.DirectionCount;
+                Reference.VehicleDefinitionObjectPath = FSoftObjectPath(Preview.VehicleDefinitionObjectPath);
+            }
+        }
+    }
+
     if (FPlayWorldCommands::GlobalPlayWorldActions.IsValid() && FPlayWorldCommands::Get().PlayInViewport.IsValid())
     {
         const bool bExecuted = FPlayWorldCommands::GlobalPlayWorldActions->TryExecuteAction(FPlayWorldCommands::Get().PlayInViewport.ToSharedRef());
+        if (!bExecuted)
+        {
+            bPreviewPending = false;
+            bPendingPreviewHasVehicle = false;
+            PendingPreviewAssets.Reset();
+        }
         ShowNotification(bExecuted ? LOCTEXT("PIEStarted", "Play In Editor requested.") : LOCTEXT("PIEUnavailable", "Play In Editor could not start in the current editor state."), bExecuted);
     }
     else
     {
+        bPreviewPending = false;
+        bPendingPreviewHasVehicle = false;
+        PendingPreviewAssets.Reset();
         ShowNotification(LOCTEXT("PIECommandsUnavailable", "Play In Editor commands are not available yet."), false);
     }
     return FReply::Handled();
+}
+
+void FPixelRacerTrackEditorModule::HandlePostPIEStarted(const bool bIsSimulating)
+{
+    if (!bPreviewPending)
+    {
+        return;
+    }
+    bPreviewPending = false;
+
+    if (GEngine == nullptr)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Pixel Racer could not access the PIE engine while creating the TrackDocument preview."));
+        return;
+    }
+
+    int32 PreviewWorldCount = 0;
+    for (const FWorldContext& WorldContext : GEngine->GetWorldContexts())
+    {
+        UWorld* PIEWorld = WorldContext.World();
+        if (WorldContext.WorldType != EWorldType::PIE || PIEWorld == nullptr)
+        {
+            continue;
+        }
+
+        FActorSpawnParameters SpawnParameters;
+        SpawnParameters.ObjectFlags |= RF_Transient;
+        SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+        APixelRacerTrackPreviewActor* PreviewActor = PIEWorld->SpawnActor<APixelRacerTrackPreviewActor>(
+            FVector::ZeroVector,
+            FRotator::ZeroRotator,
+            SpawnParameters);
+        if (PreviewActor == nullptr)
+        {
+            continue;
+        }
+
+        FString Warning;
+        if (!PreviewActor->BuildPreview(PendingPreviewDocument, PendingPreviewAssets, Warning))
+        {
+            PreviewActor->Destroy();
+            continue;
+        }
+
+        APixelRacerArcadeVehiclePawn* VehiclePawn = nullptr;
+        if (bPendingPreviewHasVehicle)
+        {
+            FString VehicleWarning;
+            VehiclePawn = PreviewActor->SpawnPlayerVehicle(PendingPreviewDocument, PendingPreviewVehicleReference, VehicleWarning);
+            if (!VehicleWarning.IsEmpty())
+            {
+                UE_LOG(LogTemp, Warning, TEXT("%s"), *VehicleWarning);
+            }
+        }
+
+        if (APlayerController* PlayerController = PIEWorld->GetFirstPlayerController())
+        {
+            if (VehiclePawn != nullptr)
+            {
+                PlayerController->Possess(VehiclePawn);
+            }
+            else
+            {
+                PlayerController->SetViewTarget(PreviewActor);
+            }
+        }
+        if (!Warning.IsEmpty())
+        {
+            UE_LOG(LogTemp, Warning, TEXT("%s"), *Warning);
+        }
+        ++PreviewWorldCount;
+    }
+
+    if (PreviewWorldCount == 0)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Pixel Racer could not create a PIE preview world for the current TrackDocument."));
+    }
+}
+
+void FPixelRacerTrackEditorModule::HandleEndPIE(const bool bWasSimulating)
+{
+    bPreviewPending = false;
+    bPendingPreviewHasVehicle = false;
+    PendingPreviewAssets.Reset();
 }
 
 void FPixelRacerTrackEditorModule::ShowNotification(const FText& Text, const bool bSuccess) const

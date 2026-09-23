@@ -13,12 +13,15 @@ Everything from v0.3-dev remains, plus:
 - Search by display name, relative path, pack id, and pack display name.
 - Category filters for Tiles, Scenery, Vehicles, and VFX.
 - Rescan button reloads manifests without restarting the editor.
+- Canvas preview metadata refreshes with the browser catalog after Rescan.
 - Wheels in Pixels retains legacy path-only TrackDocument asset IDs.
 - Imported packs use `packId:path` portable IDs to prevent cross-pack filename collisions.
 - Selecting Tiles switches the canvas to Tile Paint and updates `ActiveTile`.
 - Selecting Scenery switches the canvas to Piece Placement and updates `ActivePiece`.
-- Vehicle and VFX selection is retained for upcoming vehicle/Paper2D workflows without misclassifying them as tile/piece placements.
+- Vehicle and VFX selection is retained without misclassifying them as tile/piece placements.
 - Browser drag/drop onto the canvas performs transaction-aware placement for tiles and scenery.
+- Painted tiles retain their tileset cell index in the TrackDocument; `[` and `]` cycle the active tile while Tile Paint is selected.
+- The canvas draws tiles from imported Paper2D TileSets when available and otherwise previews the corresponding source-PNG cell. Scenery pieces draw their imported Paper2D sprite region or source PNG, with the existing marker as a fallback.
 - `PixelRacerTrackEditor.Build.cs` now explicitly depends on `Json` for manifest parsing.
 
 ### Procedural-zone editing
@@ -43,6 +46,8 @@ Everything from v0.3-dev remains, plus:
 - Asset Browser and drag/drop source guardrails pass QuickCheck.
 - TrackEditor C++/header delimiter balance passes static packaging validation.
 - Unreal Engine **5.8.3** editor target build now succeeds with `Tools/BuildEditorOnce.bat`.
+- `Play Track` snapshots the current document into a transient runtime preview actor, renders road segments, imported Paper2D tiles and sprites (mesh placeholders for missing imports), and focuses a fitted top-down camera. Importing a vehicle sheet creates or updates a saved `UPixelRacerVehicleDefinition` with directional sprites and starter stats; PIE loads that asset, spawns the pawn at the first ordered grid slot (or first road point), possesses it, and supports the configured driving controls. Live PIE verification remains.
+- Phase C importer, image-backed canvas, and TrackDocument PIE preview compile successfully; QuickCheck passes with **0 errors, 0 warnings** after the rescan-preview refresh fix.
 - `Tools/OpenEditor.bat` launched the project; the Unreal log confirms `PixelRacerTools` mounted, and the Core, TrackEditor, and RuntimeEditor DLLs loaded. The editor process was responsive.
 - The Track Editor tab opened through **Window → Pixel Racer Track Editor** on 2026-09-23 using the bundled Computer Use `sky` API. Native access now works; the Unreal MCP bridge still refuses connections.
 - Phase B in-editor verification passed on 2026-09-23, combining direct editor observations with the user's final confirmation of all remaining drag gestures. No PIE result or current-document driving loop is claimed.
@@ -60,24 +65,17 @@ The first real UHT/UBT pass exposed these source issues; each was fixed before t
 
 ## Remaining near-term work
 
-1. Phase B is complete. Begin Phase C with the actual Paper2D import/render adapter in `PixelRacerTrackEditor`:
-   - source PNG → texture,
-   - nearest filtering,
-   - no destructive pixel scaling,
-   - sprite slicing,
-   - vehicle directional frames,
-   - pivots,
-   - tile definitions,
-   - reimport,
-   - generated Unreal thumbnails/assets.
-3. Render actual selected Paper2D tiles/pieces on the authoring canvas instead of abstract primitives.
-4. Runtime TrackDocument preview actor/system for PIE.
-5. Hachiroku Drifter and Bologna Superbike selection/import in the Play workflow.
-6. Asset-backed procedural-zone generation/regeneration with manual-override preservation.
-7. One-click Generate Track and partial regeneration.
-8. Minimap/thumbnail generation.
-9. Autonomous validation lap and problem markers.
-10. Player-facing CommonUI editor shell using the same TrackDocument/authoring API.
+1. Complete Phase C's Paper2D import/render adapter in `PixelRacerTrackEditor`:
+   - source PNG import now writes a deterministic Unreal texture asset, applies nearest filtering, disables mipmaps/compression, and does not rescale source pixels;
+   - vehicle frame metadata creates centered directional Paper2D sprites; tile-grid metadata creates Paper2D TileSets; reimport updates generated assets at the same paths, but stale slices are not pruned when metadata changes;
+   - Nitro and Smoke VFX metadata now describes 64×64 grids (56 and 15 frames) and creates centered Paper2D sprites; VFX starter placement and live editor verification remain;
+   - the importer and image-backed canvas rendering build successfully with Unreal 5.8.3 and pass QuickCheck; canvas rendering still needs live editor verification.
+2. Live-verify the runtime TrackDocument preview and vehicle driving loop in PIE; the code path now supports selected/imported starter vehicles and current-track spawning.
+3. Asset-backed procedural-zone generation/regeneration with manual-override preservation.
+4. One-click Generate Track and partial regeneration.
+5. Minimap/thumbnail generation.
+6. Autonomous validation lap and problem markers.
+7. Player-facing CommonUI editor shell using the same TrackDocument/authoring API.
 
 ## Phase B live validation — 2026-09-23 (completed)
 
@@ -109,5 +107,5 @@ The user confirmed **all remaining checks worked** on the rebuilt editor: road p
 
 - Phase A compile/load and Phase B editor acceptance: complete.
 - Latest changed C++ source: built successfully with UE 5.8.3; QuickCheck passed with 0 errors and 0 warnings.
-- Phase C importer: next bounded milestone, not started. Keep editor-only import dependencies in PixelRacerTrackEditor.
-- Runtime TrackDocument preview and drive-current-track PIE loop remain unimplemented/unverified.
+- Phase C importer/canvas adapter: in progress. Pixel-safe textures, metadata-driven vehicle and VFX sprites, Paper2D TileSets, saved vehicle definitions, image-backed tile/piece drawing, tile-cell selection, browser Rescan refresh, and the selected-vehicle PIE drive path are implemented; stale generated slices are not pruned, and the new runtime/canvas rendering still needs live editor verification. Keep editor-only import dependencies in PixelRacerTrackEditor.
+- Runtime TrackDocument preview actor and current-track pawn spawning are implemented in `PixelRacerCore`; live PIE verification remains.

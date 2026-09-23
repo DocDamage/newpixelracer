@@ -2,6 +2,7 @@
 
 #include "Modules/ModuleManager.h"
 #include "Input/Reply.h"
+#include "PixelRacerTrackPreviewActor.h"
 #include "PixelRacerTrackTypes.h"
 
 class SDockTab;
@@ -32,9 +33,12 @@ private:
     FReply HandleZoneFreehand();
     FReply HandleDeleteZone();
     void HandleAssetChosen(const FString& AssetId, const FString& Role);
+    void HandleAssetBrowserManifestsReloaded();
     FReply HandleOpenSourceArt();
     FReply HandleOpenStarterTracks();
     FReply HandlePlayTrack();
+    void HandlePostPIEStarted(bool bIsSimulating);
+    void HandleEndPIE(bool bWasSimulating);
     FReply HandleSetMode(EPixelRacerAuthoringMode Mode);
     FReply HandleGenerateAI();
     FReply HandleBakeRoad();
@@ -52,6 +56,15 @@ private:
 
     TSharedPtr<SPixelRacerTrackCanvas> TrackCanvas;
     TSharedPtr<SPixelRacerAssetBrowser> AssetBrowser;
+    FDelegateHandle PostPIEStartedHandle;
+    FDelegateHandle EndPIEHandle;
+    FPixelRacerTrackDocument PendingPreviewDocument;
+    TArray<FPixelRacerTrackPreviewAssetReference> PendingPreviewAssets;
+    FPixelRacerTrackPreviewAssetReference SelectedVehicleReference;
+    FPixelRacerTrackPreviewAssetReference PendingPreviewVehicleReference;
+    bool bPreviewPending = false;
+    bool bHasSelectedVehicle = false;
+    bool bPendingPreviewHasVehicle = false;
     EPixelRacerAuthoringMode ActiveMode = EPixelRacerAuthoringMode::Spline;
 
     static const FName TrackEditorTabName;

@@ -25,7 +25,9 @@ public class PixelRacerTrackEditor : ModuleRules
             "ContentBrowser",
             "AssetTools",
             "InputCore",
-            "Json"
+            "Json",
+            "Paper2D",
+            "Paper2DEditor"
         });
     }
 }

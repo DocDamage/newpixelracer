@@ -3,7 +3,11 @@
 #include "CoreMinimal.h"
 #include "PixelRacerTrackEditorSession.h"
 #include "PixelRacerTrackTypes.h"
+#include "SPixelRacerAssetBrowser.h"
 #include "Widgets/SCompoundWidget.h"
+
+class UPaperSprite;
+class UPaperTileSet;
 
 enum class EPixelRacerZoneDrawMode : uint8
 {
@@ -43,6 +47,7 @@ public:
     FString GetZoneDrawModeName() const;
     bool DeleteSelectedZone();
     bool SetActiveAsset(const FString& AssetId, const FString& Role);
+    void SetAssetPreviewData(const TArray<FPixelRacerAssetPreviewData>& InPreviewData);
     FString GetActiveAssetSummary() const;
 
     virtual bool SupportsKeyboardFocus() const override { return true; }
@@ -85,6 +90,11 @@ private:
     bool FinishProceduralPolygon();
     bool FinishProceduralFreehand();
     bool HitTestZoneVertex(const FVector2D& LocalPosition, int32& OutZoneIndex, int32& OutVertexIndex, float MaxDistance = 10.0f) const;
+    int32 GetActiveTileCount() const;
+    void CycleActiveTileIndex(int32 Delta);
+    TSharedPtr<FSlateDynamicImageBrush> GetPreviewSourceBrush(const FString& AssetId) const;
+    UPaperSprite* LoadPreviewSprite(const FString& AssetId) const;
+    UPaperTileSet* LoadPreviewTileSet(const FString& AssetId) const;
     void ClearZoneSelection();
     void CancelOpenZone();
     void FinishOpenEdit();
@@ -100,6 +110,10 @@ private:
     FString ActivePiece = TEXT("Enviroment/barrier_red.png");
     FString LastSelectedAsset = TEXT("Tilesets/race_track_1.png");
     FString LastSelectedAssetRole = TEXT("tileset");
+    TMap<FString, FPixelRacerAssetPreviewData> AssetPreviewData;
+    mutable TMap<FString, TSharedPtr<FSlateDynamicImageBrush>> LoadedSourceBrushCache;
+    mutable TMap<FString, TWeakObjectPtr<UPaperSprite>> LoadedSpriteCache;
+    mutable TMap<FString, TWeakObjectPtr<UPaperTileSet>> LoadedTileSetCache;
     FString ActiveZonePreset = TEXT("Grassland");
     EPixelRacerZoneDrawMode ZoneDrawMode = EPixelRacerZoneDrawMode::Rectangle;
     int32 SelectedZoneIndex = INDEX_NONE;

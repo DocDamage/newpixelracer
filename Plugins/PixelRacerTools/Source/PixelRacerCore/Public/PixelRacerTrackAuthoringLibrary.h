@@ -42,7 +42,7 @@ public:
     static bool SetRoadControlPointCrossing(FPixelRacerTrackDocument& Document, int32 SplineIndex, int32 PointIndex, bool bAllowCrossing);
 
     UFUNCTION(BlueprintCallable, Category="Pixel Racer|Authoring|Tiles")
-    static bool PaintTile(FPixelRacerTrackDocument& Document, const FIntPoint& Cell, const FString& AssetId, int32 LayerIndex = 0, int32 RotationSteps = 0);
+    static bool PaintTile(FPixelRacerTrackDocument& Document, const FIntPoint& Cell, const FString& AssetId, int32 LayerIndex = 0, int32 RotationSteps = 0, int32 TileIndex = 0);
 
     UFUNCTION(BlueprintCallable, Category="Pixel Racer|Authoring|Tiles")
     static bool EraseTile(FPixelRacerTrackDocument& Document, const FIntPoint& Cell, int32 LayerIndex = 0);

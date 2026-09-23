@@ -17,6 +17,7 @@ class PIXELRACERCORE_API APixelRacerArcadeVehiclePawn : public APawn
 public:
     APixelRacerArcadeVehiclePawn();
 
+    virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
     virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
@@ -68,5 +69,5 @@ private:
     float SteerInput = 0.0f;
     bool bDriftHeld = false;
     FVector2D Velocity2D = FVector2D::ZeroVector;
-    FTransform LastSafeTransform;
+    FTransform ResetTransform = FTransform::Identity;
 };

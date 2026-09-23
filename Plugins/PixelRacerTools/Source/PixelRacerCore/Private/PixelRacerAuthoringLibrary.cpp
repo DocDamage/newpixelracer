@@ -86,9 +86,8 @@ bool UPixelRacerAuthoringLibrary::SetRoadPointWidth(FPixelRacerTrackDocument& Do
 
 bool UPixelRacerAuthoringLibrary::PaintTile(FPixelRacerTrackDocument& Document, FIntPoint Grid, const FString& TilesetId, int32 TileIndex, int32 LayerIndex, float RotationDegrees)
 {
-    (void)TileIndex; // Schema v2 addresses the source sheet through AssetId; per-cell slicing is handled by the import adapter.
     const int32 RotationSteps = FMath::RoundToInt(RotationDegrees / 90.0f);
-    return UPixelRacerTrackAuthoringLibrary::PaintTile(Document, Grid, TilesetId, LayerIndex, RotationSteps);
+    return UPixelRacerTrackAuthoringLibrary::PaintTile(Document, Grid, TilesetId, LayerIndex, RotationSteps, TileIndex);
 }
 
 bool UPixelRacerAuthoringLibrary::EraseTile(FPixelRacerTrackDocument& Document, FIntPoint Grid, int32 LayerIndex)
@@ -113,12 +112,11 @@ int32 UPixelRacerAuthoringLibrary::BakeRoadSplineToPieces(FPixelRacerTrackDocume
 
 int32 UPixelRacerAuthoringLibrary::BakeRoadSplineToTiles(FPixelRacerTrackDocument& Document, int32 SplineIndex, const FString& TilesetId, int32 TileIndex, int32 LayerIndex, bool bReplacePreviousGenerated)
 {
-    if (!Document.RoadSplines.IsValidIndex(SplineIndex) || TilesetId.IsEmpty())
+    if (!Document.RoadSplines.IsValidIndex(SplineIndex) || TilesetId.IsEmpty() || TileIndex < 0)
     {
         return 0;
     }
 
-    (void)TileIndex;
     if (bReplacePreviousGenerated)
     {
         Document.Tiles.RemoveAll([&](const FPixelRacerTilePlacement& Tile)
@@ -143,6 +141,7 @@ int32 UPixelRacerAuthoringLibrary::BakeRoadSplineToTiles(FPixelRacerTrackDocumen
         FPixelRacerTilePlacement& Tile = Document.Tiles.AddDefaulted_GetRef();
         Tile.Cell = Cell;
         Tile.AssetId = TilesetId;
+        Tile.TileIndex = TileIndex;
         Tile.LayerIndex = LayerIndex;
         Tile.bGenerated = true;
         Tile.bManualOverride = false;
