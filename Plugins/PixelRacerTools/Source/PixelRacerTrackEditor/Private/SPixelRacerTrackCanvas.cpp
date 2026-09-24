@@ -66,6 +66,7 @@ namespace PixelRacerCanvas
 
 void SPixelRacerTrackCanvas::Construct(const FArguments& InArgs)
 {
+    Session.bAutosaveEnabled = InArgs._EnableAutosave;
     SetClipping(EWidgetClipping::ClipToBounds);
     ResetDocument();
     ChildSlot
@@ -222,6 +223,125 @@ bool SPixelRacerTrackCanvas::DeleteSelectedZone()
     return bRemoved;
 }
 
+const FPixelRacerProceduralZone* SPixelRacerTrackCanvas::GetSelectedZone() const
+{
+    return Session.Document.ProceduralZones.IsValidIndex(SelectedZoneIndex)
+        ? &Session.Document.ProceduralZones[SelectedZoneIndex] : nullptr;
+}
+
+bool SPixelRacerTrackCanvas::SelectZone(int32 ZoneIndex)
+{
+    if (!Session.Document.ProceduralZones.IsValidIndex(ZoneIndex)) return false;
+    FinishOpenEdit();
+    CancelOpenZone();
+    SelectedZoneIndex = ZoneIndex;
+    SelectedZoneVertexIndex = INDEX_NONE;
+    Invalidate(EInvalidateWidgetReason::Paint);
+    return true;
+}
+
+bool SPixelRacerTrackCanvas::SelectNextZone()
+{
+    return Session.Document.ProceduralZones.Num() > 0 &&
+        SelectZone((SelectedZoneIndex + 1) % Session.Document.ProceduralZones.Num());
+}
+
+FText SPixelRacerTrackCanvas::GetSelectedZoneSummary() const
+{
+    const FPixelRacerProceduralZone* Zone = GetSelectedZone();
+    if (!Zone) return FText::FromString(TEXT("Draw a zone, select a vertex, or choose Next Zone."));
+    return FText::FromString(FString::Printf(TEXT("Zone %d: %s\n%s\n%d erased slots preserved"),
+        SelectedZoneIndex + 1, *Zone->RulePreset,
+        Zone->AssetId.IsEmpty() ? TEXT("Choose Tiles or Scenery, then Use Selected Asset.") : *Zone->AssetId,
+        Zone->SuppressedCells.Num()));
+}
+
+void SPixelRacerTrackCanvas::EditSelectedZone(TFunctionRef<void(FPixelRacerProceduralZone&)> Edit)
+{
+    if (!GetSelectedZone()) return;
+    FinishOpenEdit();
+    Session.BeginEdit();
+    Edit(Session.Document.ProceduralZones[SelectedZoneIndex]);
+    Session.EndEdit();
+    Invalidate(EInvalidateWidgetReason::Paint);
+}
+
+bool SPixelRacerTrackCanvas::UseSelectedAssetForZone(FString& OutError)
+{
+    if (!GetSelectedZone())
+    {
+        OutError = TEXT("Select a procedural zone first.");
+        return false;
+    }
+    const FPixelRacerAssetPreviewData* Preview = AssetPreviewData.Find(LastSelectedAsset);
+    if (!Preview || (Preview->Role != TEXT("tileset") && Preview->Role != TEXT("environment_piece") && Preview->Role != TEXT("sprite")))
+    {
+        OutError = TEXT("Choose a Tiles or Scenery asset in the browser first.");
+        return false;
+    }
+    EditSelectedZone([&](FPixelRacerProceduralZone& Zone)
+    {
+        Zone.AssetId = LastSelectedAsset;
+        Zone.bGenerateTiles = Preview->Role == TEXT("tileset");
+        Zone.TileIndex = Zone.bGenerateTiles ? Session.ActiveTileIndex : 0;
+    });
+    return true;
+}
+
+bool SPixelRacerTrackCanvas::GenerateZones(bool bAllConfiguredZones, int32& OutGeneratedCount, FString& OutError)
+{
+    OutGeneratedCount = 0;
+    OutError.Reset();
+    FinishOpenEdit();
+    FPixelRacerTrackDocument Candidate = Session.Document;
+    int32 ConfiguredCount = 0;
+    for (int32 Index = 0; Index < Candidate.ProceduralZones.Num(); ++Index)
+    {
+        if (!bAllConfiguredZones && Index != SelectedZoneIndex) continue;
+        const FPixelRacerProceduralZone& Zone = Candidate.ProceduralZones[Index];
+        if (bAllConfiguredZones && Zone.AssetId.IsEmpty()) continue;
+        const FPixelRacerAssetPreviewData* Preview = AssetPreviewData.Find(Zone.AssetId);
+        if (!Preview || (Zone.bGenerateTiles
+            ? (Preview->Role != TEXT("tileset") || Zone.TileIndex < 0 || Zone.TileIndex >= Preview->TileCount)
+            : (Preview->Role != TEXT("environment_piece") && Preview->Role != TEXT("sprite"))))
+        {
+            OutError = FString::Printf(TEXT("Zone %d needs an available Tiles or Scenery asset with a valid tile index. Reassign it after Rescan."), Index + 1);
+            OutGeneratedCount = 0;
+            return false;
+        }
+        int32 Count = 0;
+        if (!UPixelRacerTrackAuthoringLibrary::GenerateProceduralZone(Candidate, Index, Count, OutError))
+        {
+            OutError = FString::Printf(TEXT("Zone %d: %s"), Index + 1, *OutError);
+            OutGeneratedCount = 0;
+            return false;
+        }
+        OutGeneratedCount += Count;
+        ++ConfiguredCount;
+    }
+    if (ConfiguredCount == 0)
+    {
+        OutError = TEXT("Select a zone and assign a Tiles or Scenery asset before generating.");
+        return false;
+    }
+    if (bAllConfiguredZones)
+    {
+        if (UPixelRacerTrackAuthoringLibrary::GenerateCheckpoints(Candidate, 0, 320.0f, true) <= 0
+            || UPixelRacerTrackAuthoringLibrary::GenerateGridSlots(Candidate, 0, 8, true) != 8
+            || !UPixelRacerTrackAuthoringLibrary::GenerateRacingLines(Candidate, 0, true))
+        {
+            OutError = TEXT("Draw a usable primary road before generating track details.");
+            OutGeneratedCount = 0;
+            return false;
+        }
+    }
+    Session.BeginEdit();
+    Session.Document = MoveTemp(Candidate);
+    Session.EndEdit();
+    Invalidate(EInvalidateWidgetReason::Paint);
+    return true;
+}
+
 bool SPixelRacerTrackCanvas::SetActiveAsset(const FString& AssetId, const FString& Role)
 {
     if (AssetId.IsEmpty() || Role.IsEmpty())
@@ -260,6 +380,8 @@ void SPixelRacerTrackCanvas::SetAssetPreviewData(const TArray<FPixelRacerAssetPr
     LoadedSourceBrushCache.Reset();
     LoadedSpriteCache.Reset();
     LoadedTileSetCache.Reset();
+    MissingSpritePreviews.Reset();
+    MissingTileSetPreviews.Reset();
     for (const FPixelRacerAssetPreviewData& Preview : InPreviewData)
     {
         if (!Preview.AssetId.IsEmpty())
@@ -329,10 +451,15 @@ UPaperSprite* SPixelRacerTrackCanvas::LoadPreviewSprite(const FString& AssetId) 
         return CachedSprite->Get();
     }
 
-    UPaperSprite* Sprite = LoadObject<UPaperSprite>(nullptr, *Preview->SpriteObjectPath);
+    if (MissingSpritePreviews.Contains(AssetId)) return nullptr;
+    UPaperSprite* Sprite = LoadObject<UPaperSprite>(nullptr, *Preview->SpriteObjectPath, nullptr, LOAD_NoWarn);
     if (Sprite != nullptr)
     {
         LoadedSpriteCache.Add(AssetId, Sprite);
+    }
+    else
+    {
+        MissingSpritePreviews.Add(AssetId);
     }
     return Sprite;
 }
@@ -349,10 +476,15 @@ UPaperTileSet* SPixelRacerTrackCanvas::LoadPreviewTileSet(const FString& AssetId
         return CachedTileSet->Get();
     }
 
-    UPaperTileSet* TileSet = LoadObject<UPaperTileSet>(nullptr, *Preview->TileSetObjectPath);
+    if (MissingTileSetPreviews.Contains(AssetId)) return nullptr;
+    UPaperTileSet* TileSet = LoadObject<UPaperTileSet>(nullptr, *Preview->TileSetObjectPath, nullptr, LOAD_NoWarn);
     if (TileSet != nullptr)
     {
         LoadedTileSetCache.Add(AssetId, TileSet);
+    }
+    else
+    {
+        MissingTileSetPreviews.Add(AssetId);
     }
     return TileSet;
 }

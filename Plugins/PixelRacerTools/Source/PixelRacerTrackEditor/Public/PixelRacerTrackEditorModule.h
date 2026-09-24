@@ -9,6 +9,7 @@ class SDockTab;
 class FSpawnTabArgs;
 class SPixelRacerTrackCanvas;
 class SPixelRacerAssetBrowser;
+class SWidget;
 
 class FPixelRacerTrackEditorModule final : public IModuleInterface
 {
@@ -19,6 +20,8 @@ public:
 private:
     void RegisterMenus();
     TSharedRef<SDockTab> SpawnTrackEditorTab(const FSpawnTabArgs& Args);
+    TSharedRef<SWidget> BuildZoneGenerationPanel();
+    FReply HandleGenerateZones(bool bAllConfiguredZones);
 
     FReply HandleValidateStarterTracks();
     FReply HandleUndo();

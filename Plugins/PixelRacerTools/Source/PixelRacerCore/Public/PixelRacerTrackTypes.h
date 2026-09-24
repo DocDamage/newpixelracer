@@ -157,6 +157,10 @@ struct PIXELRACERCORE_API FPixelRacerTilePlacement
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Track")
     bool bManualOverride = false;
+
+    /** Invalid for legacy/manual placements; identifies the procedural zone that owns this output. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Track")
+    FGuid SourceZoneId;
 };
 
 USTRUCT(BlueprintType)
@@ -187,6 +191,14 @@ struct PIXELRACERCORE_API FPixelRacerPiecePlacement
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Track")
     TArray<FString> Tags;
+
+    /** Invalid for legacy/manual placements; identifies the procedural zone that owns this output. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Track")
+    FGuid SourceZoneId;
+
+    /** Stable generator slot. It is meaningful when SourceZoneId is valid. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Track")
+    FIntPoint SourceZoneCell = FIntPoint::ZeroValue;
 };
 
 USTRUCT(BlueprintType)
@@ -208,6 +220,32 @@ struct PIXELRACERCORE_API FPixelRacerProceduralZone
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Track")
     int32 Seed = 1337;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Track")
+    FString AssetId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Track")
+    bool bGenerateTiles = true;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Track", meta=(ClampMin="0"))
+    int32 TileIndex = 0;
+
+    /** World-space slot size for scenery pieces. Tile generation always uses the 32-unit document grid. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Track", meta=(ClampMin="1.0"))
+    float Spacing = 64.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Track", meta=(ClampMin="0.0", ClampMax="1.0"))
+    float Density = 0.5f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Track")
+    bool bAvoidRoads = true;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Track", meta=(ClampMin="0.0"))
+    float RoadClearance = 16.0f;
+
+    /** Source slots intentionally erased by the user; regeneration leaves them empty. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Track")
+    TArray<FIntPoint> SuppressedCells;
 };
 
 USTRUCT(BlueprintType)

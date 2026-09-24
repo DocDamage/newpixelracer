@@ -48,6 +48,7 @@ The project keeps editor-only importing code out of the runtime core. Paper2D is
 
 - TrackDocument schema v2 with roads, tiles, pieces, procedural zones, checkpoints, grid slots, racing lines, surfaces, elevation layers, and generation settings.
 - A Slate Track Editor with spline and tile/piece authoring, undo/redo, autosave, sandbox export/reload, and procedural Rectangle, Polygon, and Freehand zones.
+- Asset-backed zone generation with saved asset/seed/density/spacing settings, road clearance, deterministic placements, and per-zone regeneration. Manual overrides, locked pieces, and erased slots are preserved. **Generate Track Details** batches configured zones, checkpoints, grid slots, and racing lines into one undoable action using the existing road.
 - Asset Browser search, categories, source-PNG thumbnails, manifest rescan, active-asset selection, and tile/scenery drag-and-drop placement.
 - UE 5.8.3 compile fixes, a successful editor-target build, and confirmed plugin/module loading.
 

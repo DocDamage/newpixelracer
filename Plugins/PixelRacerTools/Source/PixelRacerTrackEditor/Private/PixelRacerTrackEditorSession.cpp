@@ -86,6 +86,10 @@ FString FPixelRacerTrackEditorSession::GetAutosavePath() const
 
 void FPixelRacerTrackEditorSession::SaveAutosave() const
 {
+    if (!bAutosaveEnabled)
+    {
+        return;
+    }
     FString Error;
     UPixelRacerTrackLibrary::ExportTrackDocument(Document, GetAutosavePath(), Error);
 }

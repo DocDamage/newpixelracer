@@ -76,7 +76,30 @@ Select **Procedural zones** and choose a preset: Grassland, Barrier Edge, Crowd,
 - The selected zone is highlighted with edit handles.
 - **Delete Selected Zone** or Delete/Backspace removes the selected zone while Procedural Zone mode is active.
 
-Asset-backed preset regeneration and manual-override protection for generated scenery are still pending.
+### Generate zone content
+
+1. Draw a zone or choose **Next Zone** to select an existing one.
+2. Select a **Tiles** or **Scenery** asset in the browser, then click **Use Selected Asset** in **Zone Content**.
+3. Set density and seed. For tiles, choose the tileset cell index; tiles use the same 32-unit grid as painting. For scenery, set placement spacing.
+4. Enable **Keep roads clear** and adjust extra clearance as needed.
+5. Click **Generate / Regenerate Zone**. Settings and output are saved in the TrackDocument; changing a setting alone does not regenerate.
+
+**Generate Track Details** regenerates every configured zone and derives checkpoints,
+eight starting slots, and four racing lines from the existing primary road. It does
+not invent a road layout. The entire operation is one Undo step. If a zone is invalid
+or its asset disappeared after Rescan, the whole action leaves the document unchanged
+and reports which zone needs attention.
+
+Regeneration replaces only that zone's generated content. Painted tile overrides,
+manual pieces, locked pieces, and other zones are preserved. Erasing generated
+content records a suppressed slot so regeneration does not bring it back. Use
+**Restore Erased Slots on Next Generate** to explicitly clear those exclusions.
+Scenery slots are based on spacing; changing spacing changes their world positions.
+
+Deleting a zone removes its generated content while preserving manual or locked
+placements. Self-intersecting/degenerate polygons and excessive generation work
+are rejected before replacing output. Asset dimensions still matter when choosing
+scenery spacing and road clearance; generation does not solve sprite collisions.
 
 ## Undo / redo
 

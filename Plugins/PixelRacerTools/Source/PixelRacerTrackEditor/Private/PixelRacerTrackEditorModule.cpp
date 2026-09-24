@@ -23,6 +23,8 @@
 #include "ToolMenus.h"
 #include "Widgets/Docking/SDockTab.h"
 #include "Widgets/Input/SButton.h"
+#include "Widgets/Input/SCheckBox.h"
+#include "Widgets/Input/SNumericEntryBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SScrollBox.h"
@@ -303,6 +305,8 @@ TSharedRef<SDockTab> FPixelRacerTrackEditorModule::SpawnTrackEditorTab(const FSp
                 ]
                 + SVerticalBox::Slot().AutoHeight().Padding(0.0f, 3.0f)
                 [ SNew(SButton).Text(LOCTEXT("DeleteSelectedZone", "Delete Selected Zone")).OnClicked_Raw(this, &FPixelRacerTrackEditorModule::HandleDeleteZone) ]
+                + SVerticalBox::Slot().AutoHeight().Padding(0.0f, 8.0f)
+                [ BuildZoneGenerationPanel() ]
                 + SVerticalBox::Slot().AutoHeight().Padding(0.0f, 10.0f)
                 [
                     SNew(STextBlock)
@@ -529,6 +533,113 @@ FReply FPixelRacerTrackEditorModule::HandleSetZonePreset(FString Preset)
     if (TrackCanvas.IsValid())
     {
         TrackCanvas->SetActiveZonePreset(Preset);
+    }
+    return FReply::Handled();
+}
+
+TSharedRef<SWidget> FPixelRacerTrackEditorModule::BuildZoneGenerationPanel()
+{
+    auto FloatSetting = [this](const FText& Label, float FPixelRacerProceduralZone::* Field,
+        float Minimum, float Maximum, bool bSceneryOnly = false) -> TSharedRef<SWidget>
+    {
+        return SNew(SVerticalBox)
+            + SVerticalBox::Slot().AutoHeight()
+            [ SNew(STextBlock).Text(Label).AutoWrapText(true) ]
+            + SVerticalBox::Slot().AutoHeight()
+            [
+                SNew(SNumericEntryBox<float>).AllowSpin(false).MinValue(Minimum).MaxValue(Maximum)
+                .IsEnabled_Lambda([this, bSceneryOnly]()
+                {
+                    const auto* Zone = TrackCanvas.IsValid() ? TrackCanvas->GetSelectedZone() : nullptr;
+                    return Zone && (!bSceneryOnly || !Zone->bGenerateTiles);
+                })
+                .Value_Lambda([this, Field]() -> TOptional<float>
+                {
+                    const auto* Zone = TrackCanvas.IsValid() ? TrackCanvas->GetSelectedZone() : nullptr;
+                    return Zone ? TOptional<float>(Zone->*Field) : TOptional<float>();
+                })
+                .OnValueCommitted_Lambda([this, Field, Minimum, Maximum](float Value, ETextCommit::Type)
+                {
+                    if (TrackCanvas.IsValid() && FMath::IsFinite(Value))
+                        TrackCanvas->EditSelectedZone([&](FPixelRacerProceduralZone& Zone) { Zone.*Field = FMath::Clamp(Value, Minimum, Maximum); });
+                })
+            ];
+    };
+    return SNew(SVerticalBox)
+        + SVerticalBox::Slot().AutoHeight()
+        [ SNew(STextBlock).Text(LOCTEXT("ZoneGenerationHeader", "ZONE CONTENT")).Font(FAppStyle::GetFontStyle(TEXT("HeadingExtraSmall"))) ]
+        + SVerticalBox::Slot().AutoHeight().Padding(0, 3)
+        [ SNew(STextBlock).AutoWrapText(true).Text_Lambda([this]() { return TrackCanvas->GetSelectedZoneSummary(); }) ]
+        + SVerticalBox::Slot().AutoHeight().Padding(0, 3)
+        [ SNew(SButton).Text(LOCTEXT("NextZone", "Next Zone")).OnClicked_Lambda([this]()
+            { TrackCanvas->SelectNextZone(); return FReply::Handled(); }) ]
+        + SVerticalBox::Slot().AutoHeight().Padding(0, 3)
+        [ SNew(SButton).Text(LOCTEXT("UseZoneAsset", "Use Selected Asset")).OnClicked_Lambda([this]()
+            {
+                FString Error;
+                const bool bSuccess = TrackCanvas->UseSelectedAssetForZone(Error);
+                ShowNotification(bSuccess ? LOCTEXT("ZoneAssetAssigned", "Asset assigned. Generate the zone to apply it.") : FText::FromString(Error), bSuccess);
+                return FReply::Handled();
+            }) ]
+        + SVerticalBox::Slot().AutoHeight().Padding(0, 3)
+        [ FloatSetting(LOCTEXT("ZoneDensity", "Density (0–1)"), &FPixelRacerProceduralZone::Density, 0.0f, 1.0f) ]
+        + SVerticalBox::Slot().AutoHeight().Padding(0, 3)
+        [ FloatSetting(LOCTEXT("ZoneSpacing", "Scenery spacing (tiles use the 32-unit grid)"), &FPixelRacerProceduralZone::Spacing, 1.0f, 4096.0f, true) ]
+        + SVerticalBox::Slot().AutoHeight().Padding(0, 3)
+        [ SNew(STextBlock).Text(LOCTEXT("ZoneSeed", "Seed")) ]
+        + SVerticalBox::Slot().AutoHeight()
+        [
+            SNew(SNumericEntryBox<int32>).AllowSpin(false)
+            .IsEnabled_Lambda([this]() { return TrackCanvas->GetSelectedZone() != nullptr; })
+            .Value_Lambda([this]() -> TOptional<int32> { const auto* Zone = TrackCanvas->GetSelectedZone(); return Zone ? TOptional<int32>(Zone->Seed) : TOptional<int32>(); })
+            .OnValueCommitted_Lambda([this](int32 Value, ETextCommit::Type)
+                { TrackCanvas->EditSelectedZone([&](FPixelRacerProceduralZone& Zone) { Zone.Seed = Value; }); })
+        ]
+        + SVerticalBox::Slot().AutoHeight().Padding(0, 3)
+        [ SNew(STextBlock).Text(LOCTEXT("ZoneTileIndex", "Tileset cell index")) ]
+        + SVerticalBox::Slot().AutoHeight()
+        [
+            SNew(SNumericEntryBox<int32>).AllowSpin(false).MinValue(0)
+            .IsEnabled_Lambda([this]() { const auto* Zone = TrackCanvas->GetSelectedZone(); return Zone && Zone->bGenerateTiles; })
+            .Value_Lambda([this]() -> TOptional<int32> { const auto* Zone = TrackCanvas->GetSelectedZone(); return Zone ? TOptional<int32>(Zone->TileIndex) : TOptional<int32>(); })
+            .OnValueCommitted_Lambda([this](int32 Value, ETextCommit::Type)
+                { TrackCanvas->EditSelectedZone([&](FPixelRacerProceduralZone& Zone) { Zone.TileIndex = FMath::Max(0, Value); }); })
+        ]
+        + SVerticalBox::Slot().AutoHeight().Padding(0, 3)
+        [
+            SNew(SCheckBox)
+            .IsEnabled_Lambda([this]() { return TrackCanvas->GetSelectedZone() != nullptr; })
+            .IsChecked_Lambda([this]() { const auto* Zone = TrackCanvas->GetSelectedZone(); return Zone && Zone->bAvoidRoads ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; })
+            .OnCheckStateChanged_Lambda([this](ECheckBoxState State)
+                { TrackCanvas->EditSelectedZone([&](FPixelRacerProceduralZone& Zone) { Zone.bAvoidRoads = State == ECheckBoxState::Checked; }); })
+            [ SNew(STextBlock).Text(LOCTEXT("ZoneAvoidRoads", "Keep roads clear")) ]
+        ]
+        + SVerticalBox::Slot().AutoHeight().Padding(0, 3)
+        [ FloatSetting(LOCTEXT("ZoneClearance", "Extra road clearance"), &FPixelRacerProceduralZone::RoadClearance, 0.0f, 4096.0f) ]
+        + SVerticalBox::Slot().AutoHeight().Padding(0, 3)
+        [ SNew(SButton).Text(LOCTEXT("RegenerateZone", "Generate / Regenerate Zone")).OnClicked_Raw(this, &FPixelRacerTrackEditorModule::HandleGenerateZones, false) ]
+        + SVerticalBox::Slot().AutoHeight().Padding(0, 3)
+        [ SNew(SButton).Text(LOCTEXT("RestoreZoneSlots", "Restore Erased Slots on Next Generate"))
+            .IsEnabled_Lambda([this]() { const auto* Zone = TrackCanvas->GetSelectedZone(); return Zone && Zone->SuppressedCells.Num() > 0; })
+            .OnClicked_Lambda([this]() { TrackCanvas->EditSelectedZone([](FPixelRacerProceduralZone& Zone) { Zone.SuppressedCells.Reset(); }); return FReply::Handled(); }) ]
+        + SVerticalBox::Slot().AutoHeight().Padding(0, 3)
+        [ SNew(SButton).Text(LOCTEXT("GenerateTrackDetails", "Generate Track Details"))
+            .ToolTipText(LOCTEXT("GenerateTrackDetailsHelp", "Regenerate all configured zones, checkpoints, starting grid, and racing lines from the existing road. One Undo restores the whole operation."))
+            .OnClicked_Raw(this, &FPixelRacerTrackEditorModule::HandleGenerateZones, true) ]
+        + SVerticalBox::Slot().AutoHeight().Padding(0, 3)
+        [ SNew(STextBlock).AutoWrapText(true).Text(LOCTEXT("ZoneGenerationHelp", "Manual edits and erased slots survive regeneration. Changes apply when you Generate. Export saves these settings with the track.")) ];
+}
+
+FReply FPixelRacerTrackEditorModule::HandleGenerateZones(bool bAllConfiguredZones)
+{
+    if (TrackCanvas.IsValid())
+    {
+        int32 Count = 0;
+        FString Error;
+        const bool bSuccess = TrackCanvas->GenerateZones(bAllConfiguredZones, Count, Error);
+        ShowNotification(bSuccess
+            ? FText::Format(LOCTEXT("ZoneGeneratedCount", "Generated {0} placements. Manual edits preserved; Undo restores the previous track."), FText::AsNumber(Count))
+            : FText::FromString(Error), bSuccess);
     }
     return FReply::Handled();
 }

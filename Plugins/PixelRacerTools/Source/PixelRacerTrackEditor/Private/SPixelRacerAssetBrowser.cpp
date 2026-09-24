@@ -8,6 +8,7 @@
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
+#include "UObject/StrongObjectPtr.h"
 #endif
 #include "Dom/JsonObject.h"
 #include "Editor.h"
@@ -519,6 +520,11 @@ namespace PixelRacerAssetBrowser
         const FString PackageFilename = FPackageName::LongPackageNameToFilename(
             Package->GetName(),
             FPackageName::GetAssetPackageExtension());
+        if (IFileManager::Get().IsReadOnly(*PackageFilename))
+        {
+            OutError = FString::Printf(TEXT("Cannot save read-only imported asset package: %s"), *PackageFilename);
+            return false;
+        }
         IFileManager::Get().MakeDirectory(*FPaths::GetPath(PackageFilename), true);
 
         FSavePackageArgs SaveArgs;
@@ -596,7 +602,10 @@ namespace PixelRacerAssetBrowser
         for (TObjectIterator<UPackage> It; It; ++It)
         {
             UPackage* Package = *It;
-            if (Package == nullptr || Package->HasAnyFlags(RF_Transient) || !Package->IsDirty())
+            // Native script packages can be dirty after editor startup, but are not
+            // saveable content. Loaded references are checked separately below.
+            if (Package == nullptr || Package->HasAnyFlags(RF_Transient) ||
+                Package->HasAnyPackageFlags(PKG_CompiledIn) || !Package->IsDirty())
             {
                 continue;
             }
@@ -2059,6 +2068,478 @@ namespace PixelRacerAssetBrowser
             HasInventoryRecord(VfxInventory, FString::Printf(TEXT("%s/%s_Frame_014.%s_Frame_014"),
                 *VfxPaths.PackagePath, *VfxPaths.AssetName, *VfxPaths.AssetName)));
 
+        TStrongObjectPtr<UPixelRacerVehicleDefinition> LoadedRetentionReferencer(
+            NewObject<UPixelRacerVehicleDefinition>(GetTransientPackage()));
+        if (!TestNotNull(TEXT("Creates a transient referencer for obsolete VFX frames"), LoadedRetentionReferencer.Get()))
+        {
+            return false;
+        }
+        for (int32 FrameIndex = 12; FrameIndex < VfxItem.FrameCount; ++FrameIndex)
+        {
+            const FString SpriteName = FString::Printf(TEXT("%s_Frame_%03d"), *VfxPaths.AssetName, FrameIndex);
+            const FString SpritePath = FString::Printf(TEXT("%s/%s.%s"), *VfxPaths.PackagePath, *SpriteName, *SpriteName);
+            UPaperSprite* ObsoleteFrame = LoadObject<UPaperSprite>(nullptr, *SpritePath);
+            if (!TestNotNull(*FString::Printf(TEXT("Obsolete VFX frame %d resolves before cleanup"), FrameIndex), ObsoleteFrame))
+            {
+                return false;
+            }
+            LoadedRetentionReferencer->DirectionalSprites.Add(ObsoleteFrame);
+        }
+
+        FPixelRacerAssetBrowserItem ReducedVfxItem = VfxItem;
+        ReducedVfxItem.FrameHeight = 80;
+        ReducedVfxItem.FrameRows = 4;
+        ReducedVfxItem.FrameCount = 12;
+        const auto GetVfxFramePath = [&VfxPaths](const int32 FrameIndex)
+        {
+            const FString SpriteName = FString::Printf(TEXT("%s_Frame_%03d"), *VfxPaths.AssetName, FrameIndex);
+            return FString::Printf(TEXT("%s/%s.%s"), *VfxPaths.PackagePath, *SpriteName, *SpriteName);
+        };
+        const auto FindInventoryRecord = [](const TArray<FGeneratedAssetRecord>& Records, const FString& ObjectPath)
+            -> const FGeneratedAssetRecord*
+        {
+            return Records.FindByPredicate([&ObjectPath](const FGeneratedAssetRecord& Record)
+                { return Record.ObjectPath == ObjectPath; });
+        };
+        const auto ReimportReducedVfx = [this, &GetVfxFramePath, &ReducedVfxItem, &TestPackId, &VfxItem, &VfxRelativePath](
+            const TCHAR* CaseLabel,
+            TArray<FGeneratedAssetRecord>& OutInventory)
+        {
+            FString ObjectPath;
+            FString CleanupSummary;
+            FString Error;
+            int32 GeneratedAssetCount = 0;
+            if (!TestTrue(*FString::Printf(TEXT("%s reimports the reduced VFX grid"), CaseLabel),
+                    ImportPixelArtAssets(ReducedVfxItem, ObjectPath, GeneratedAssetCount, CleanupSummary, Error)))
+            {
+                AddError(Error);
+                return false;
+            }
+            if (!TestEqual(*FString::Printf(TEXT("%s creates only the expected frame count"), CaseLabel),
+                    GeneratedAssetCount, ReducedVfxItem.FrameCount))
+            {
+                return false;
+            }
+            if (!TestTrue(*FString::Printf(TEXT("%s reports retention of all three obsolete VFX frames"), CaseLabel),
+                    CleanupSummary.Contains(TEXT("Retained 3 obsolete asset(s) for safety"))))
+            {
+                return false;
+            }
+
+            UTexture2D* ReimportedTexture = LoadObject<UTexture2D>(nullptr, *ObjectPath);
+            FString InventoryError;
+            if (!TestNotNull(*FString::Printf(TEXT("%s leaves the reduced VFX texture resolvable"), CaseLabel),
+                    ReimportedTexture) ||
+                !TestTrue(*FString::Printf(TEXT("%s preserves a valid ownership inventory"), CaseLabel),
+                    ReadGeneratedAssetInventory(ReimportedTexture, TestPackId + TEXT(":") + VfxRelativePath,
+                        OutInventory, InventoryError) == EGeneratedInventoryState::Valid))
+            {
+                AddError(InventoryError);
+                return false;
+            }
+            if (!TestEqual(*FString::Printf(TEXT("%s retains every current and stale VFX inventory record"), CaseLabel),
+                    OutInventory.Num(), VfxItem.FrameCount + 1))
+            {
+                return false;
+            }
+            for (int32 FrameIndex = ReducedVfxItem.FrameCount; FrameIndex < VfxItem.FrameCount; ++FrameIndex)
+            {
+                const FString StaleObjectPath = GetVfxFramePath(FrameIndex);
+                const FSoftObjectPath StaleSoftObjectPath(StaleObjectPath);
+                const FString StalePackageFilename = FPackageName::LongPackageNameToFilename(
+                    StaleSoftObjectPath.GetLongPackageName(), FPackageName::GetAssetPackageExtension());
+                if (!TestNotNull(*FString::Printf(TEXT("%s keeps stale VFX frame %d resolvable"), CaseLabel, FrameIndex),
+                        LoadObject<UPaperSprite>(nullptr, *StaleObjectPath)) ||
+                    !TestTrue(*FString::Printf(TEXT("%s keeps stale VFX frame %d on disk"), CaseLabel, FrameIndex),
+                        FPaths::FileExists(StalePackageFilename)))
+                {
+                    return false;
+                }
+            }
+            return true;
+        };
+        const auto TestExactRetentionReason = [this, &FindInventoryRecord, &GetVfxFramePath](
+            const TArray<FGeneratedAssetRecord>& Inventory,
+            const int32 FrameIndex,
+            const FString& ExpectedReason)
+        {
+            const FGeneratedAssetRecord* Record = FindInventoryRecord(Inventory, GetVfxFramePath(FrameIndex));
+            if (!TestNotNull(*FString::Printf(TEXT("Stale VFX frame %d remains inventoried"), FrameIndex), Record))
+            {
+                return false;
+            }
+            return TestEqual(*FString::Printf(TEXT("Stale VFX frame %d records the expected retention reason"), FrameIndex),
+                Record->PendingReason, ExpectedReason);
+        };
+        const auto TestLoadedReferenceRetentionReason = [this, &FindInventoryRecord, &GetVfxFramePath](
+            const TArray<FGeneratedAssetRecord>& Inventory,
+            const int32 FrameIndex)
+        {
+            const FGeneratedAssetRecord* Record = FindInventoryRecord(Inventory, GetVfxFramePath(FrameIndex));
+            if (!TestNotNull(*FString::Printf(TEXT("Referenced stale VFX frame %d remains inventoried"), FrameIndex), Record))
+            {
+                return false;
+            }
+            return TestTrue(*FString::Printf(TEXT("Referenced stale VFX frame %d records a loaded-reference reason (actual: %s)"),
+                    FrameIndex, *Record->PendingReason),
+                Record->PendingReason.StartsWith(TEXT("A loaded object references it (")) &&
+                Record->PendingReason.EndsWith(TEXT(").")));
+        };
+
+        TArray<FGeneratedAssetRecord> VfxInventoryAfterRetention;
+        if (!ReimportReducedVfx(TEXT("Loaded-reference retention"), VfxInventoryAfterRetention))
+        {
+            return false;
+        }
+        TestEqual(TEXT("The loaded-reference inventory retains three obsolete frames alongside current outputs"),
+            VfxInventoryAfterRetention.Num(), 16);
+        for (int32 FrameIndex = 12; FrameIndex < VfxItem.FrameCount; ++FrameIndex)
+        {
+            UPaperSprite* RetainedFrame = LoadObject<UPaperSprite>(nullptr, *GetVfxFramePath(FrameIndex));
+            if (!TestNotNull(*FString::Printf(TEXT("Referenced stale VFX frame %d remains resolvable"), FrameIndex), RetainedFrame) ||
+                !TestLoadedReferenceRetentionReason(VfxInventoryAfterRetention, FrameIndex))
+            {
+                return false;
+            }
+        }
+
+        UPaperSprite* OtherDirtyFixture = LoadObject<UPaperSprite>(nullptr, *FString::Printf(
+            TEXT("%s/%s_Direction_00.%s_Direction_00"), *VehiclePaths.PackagePath, *VehiclePaths.AssetName, *VehiclePaths.AssetName));
+        if (!TestNotNull(TEXT("The smoke-only other-package dirty fixture resolves"), OtherDirtyFixture))
+        {
+            return false;
+        }
+        UPackage* OtherDirtyPackage = OtherDirtyFixture->GetOutermost();
+        if (!TestNotNull(TEXT("The smoke-only other-package dirty fixture has a package"), OtherDirtyPackage))
+        {
+            return false;
+        }
+        bool bOtherDirtyPackageRestored = false;
+        const bool bOtherDirtyPackageCasePassed = [&]()
+        {
+            const bool bWasDirty = OtherDirtyPackage->IsDirty();
+            OtherDirtyPackage->SetDirtyFlag(true);
+            ON_SCOPE_EXIT
+            {
+                OtherDirtyPackage->SetDirtyFlag(bWasDirty);
+                bOtherDirtyPackageRestored = OtherDirtyPackage->IsDirty() == bWasDirty;
+            };
+
+            TArray<FGeneratedAssetRecord> Inventory;
+            if (!ReimportReducedVfx(TEXT("Other dirty package retention"), Inventory))
+            {
+                return false;
+            }
+            const FString ExpectedReason = FString::Printf(
+                TEXT("Another package has unsaved changes (%s); cleanup was deferred to protect possible unsaved references."),
+                *OtherDirtyPackage->GetName());
+            return TestExactRetentionReason(Inventory, 12, ExpectedReason);
+        }();
+        if (!TestTrue(TEXT("The smoke-only other dirty package restores its original dirty state"), bOtherDirtyPackageRestored) ||
+            !bOtherDirtyPackageCasePassed)
+        {
+            return false;
+        }
+
+        UPaperSprite* DirtyStaleFixture = LoadObject<UPaperSprite>(nullptr, *GetVfxFramePath(12));
+        if (!TestNotNull(TEXT("The smoke-only dirty stale-output fixture resolves"), DirtyStaleFixture))
+        {
+            return false;
+        }
+        UPackage* DirtyStalePackage = DirtyStaleFixture->GetOutermost();
+        if (!TestNotNull(TEXT("The smoke-only dirty stale-output fixture has a package"), DirtyStalePackage))
+        {
+            return false;
+        }
+        bool bDirtyStalePackageRestored = false;
+        const bool bDirtyStaleCasePassed = [&]()
+        {
+            const bool bWasDirty = DirtyStalePackage->IsDirty();
+            DirtyStalePackage->SetDirtyFlag(true);
+            ON_SCOPE_EXIT
+            {
+                DirtyStalePackage->SetDirtyFlag(bWasDirty);
+                bDirtyStalePackageRestored = DirtyStalePackage->IsDirty() == bWasDirty;
+            };
+
+            TArray<FGeneratedAssetRecord> Inventory;
+            return ReimportReducedVfx(TEXT("Dirty stale-output retention"), Inventory) &&
+                TestExactRetentionReason(Inventory, 12, TEXT("The generated asset has unsaved changes; it was retained."));
+        }();
+        if (!TestTrue(TEXT("The smoke-only dirty stale-output fixture restores its original dirty state"), bDirtyStalePackageRestored) ||
+            !bDirtyStaleCasePassed)
+        {
+            return false;
+        }
+
+        UPaperSprite* ReadOnlyStaleFixture = LoadObject<UPaperSprite>(nullptr, *GetVfxFramePath(13));
+        if (!TestNotNull(TEXT("The smoke-only read-only stale-output fixture resolves"), ReadOnlyStaleFixture))
+        {
+            return false;
+        }
+        const FString ReadOnlyFixtureFilename = FPackageName::LongPackageNameToFilename(
+            ReadOnlyStaleFixture->GetOutermost()->GetName(), FPackageName::GetAssetPackageExtension());
+        IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+        bool bReadOnlyFixtureRestored = false;
+        const bool bReadOnlyStaleCasePassed = [&]()
+        {
+            const bool bWasReadOnly = PlatformFile.IsReadOnly(*ReadOnlyFixtureFilename);
+            ON_SCOPE_EXIT
+            {
+                bReadOnlyFixtureRestored = PlatformFile.SetReadOnly(*ReadOnlyFixtureFilename, bWasReadOnly) &&
+                    PlatformFile.IsReadOnly(*ReadOnlyFixtureFilename) == bWasReadOnly;
+            };
+            if (!TestTrue(TEXT("Marks the smoke-only stale-output fixture read-only"),
+                    PlatformFile.SetReadOnly(*ReadOnlyFixtureFilename, true)) ||
+                !TestTrue(TEXT("The smoke-only stale-output fixture is read-only"),
+                    PlatformFile.IsReadOnly(*ReadOnlyFixtureFilename)))
+            {
+                return false;
+            }
+
+            TArray<FGeneratedAssetRecord> Inventory;
+            return ReimportReducedVfx(TEXT("Read-only stale-output retention"), Inventory) &&
+                TestExactRetentionReason(Inventory, 13,
+                    TEXT("The generated asset file is missing or read-only; cleanup was deferred."));
+        }();
+        if (!TestTrue(TEXT("The smoke-only read-only stale-output fixture restores its original file mode"),
+                bReadOnlyFixtureRestored) ||
+            !bReadOnlyStaleCasePassed)
+        {
+            return false;
+        }
+
+        UPaperSprite* OwnershipMismatchFixture = LoadObject<UPaperSprite>(nullptr, *GetVfxFramePath(14));
+        if (!TestNotNull(TEXT("The smoke-only ownership-mismatch stale-output fixture resolves"), OwnershipMismatchFixture))
+        {
+            return false;
+        }
+        FMetaData& OwnershipMetadata = OwnershipMismatchFixture->GetOutermost()->GetMetaData();
+        const FString* OriginalOwner = OwnershipMetadata.FindValue(OwnershipMismatchFixture, GeneratedOwnerKey);
+        if (!TestNotNull(TEXT("The smoke-only ownership-mismatch fixture has generated ownership metadata"), OriginalOwner))
+        {
+            return false;
+        }
+        const FString OriginalOwnerValue = *OriginalOwner;
+        UPackage* OwnershipMismatchPackage = OwnershipMismatchFixture->GetOutermost();
+        bool bOwnershipMetadataRestored = false;
+        const bool bOwnershipMismatchCasePassed = [&]()
+        {
+            const bool bWasDirty = OwnershipMismatchPackage->IsDirty();
+            OwnershipMetadata.SetValue(OwnershipMismatchFixture, GeneratedOwnerKey, TEXT("PixelRacerAutomationMismatch"));
+            ON_SCOPE_EXIT
+            {
+                OwnershipMetadata.SetValue(OwnershipMismatchFixture, GeneratedOwnerKey, *OriginalOwnerValue);
+                OwnershipMismatchPackage->SetDirtyFlag(bWasDirty);
+                const FString* RestoredOwner = OwnershipMetadata.FindValue(OwnershipMismatchFixture, GeneratedOwnerKey);
+                bOwnershipMetadataRestored = RestoredOwner != nullptr && *RestoredOwner == OriginalOwnerValue &&
+                    OwnershipMismatchPackage->IsDirty() == bWasDirty;
+            };
+
+            TArray<FGeneratedAssetRecord> Inventory;
+            return ReimportReducedVfx(TEXT("Ownership-mismatch stale-output retention"), Inventory) &&
+                TestExactRetentionReason(Inventory, 14,
+                    TEXT("Ownership metadata is missing or differs from the source inventory; it was retained."));
+        }();
+        if (!TestTrue(TEXT("The smoke-only ownership-mismatch fixture restores its original metadata and dirty state"),
+                bOwnershipMetadataRestored) ||
+            !bOwnershipMismatchCasePassed)
+        {
+            return false;
+        }
+
+        // Persist a reference in this run's generated vehicle definition. The
+        // registry gate runs before loaded-reference checking, so require its
+        // exact reason rather than accepting the live holder as a substitute.
+        TStrongObjectPtr<UPixelRacerVehicleDefinition> SavedReferencer(ReimportedVehicleDefinition);
+        IAssetRegistry& TestAssetRegistry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
+        const FString SavedReferencerFilename = FPackageName::LongPackageNameToFilename(
+            SavedReferencer->GetOutermost()->GetName(), FPackageName::GetAssetPackageExtension());
+        bool bSavedReferencesRestored = false;
+        const bool bSavedReferenceCasePassed = [&]()
+        {
+            const auto OriginalDirections = SavedReferencer->DirectionalSprites;
+            ON_SCOPE_EXIT
+            {
+                SavedReferencer->DirectionalSprites = OriginalDirections;
+                FString RestoreError;
+                bSavedReferencesRestored = SaveImportedAsset(SavedReferencer.Get(), RestoreError);
+                if (!bSavedReferencesRestored)
+                {
+                    AddError(RestoreError);
+                }
+                TestAssetRegistry.ScanFilesSynchronous({SavedReferencerFilename}, true);
+            };
+            SavedReferencer->DirectionalSprites.Append(LoadedRetentionReferencer->DirectionalSprites);
+            FString SaveError;
+            if (!TestTrue(TEXT("Saves the smoke-only reference fixture"), SaveImportedAsset(SavedReferencer.Get(), SaveError)))
+            {
+                AddError(SaveError);
+                return false;
+            }
+            TestAssetRegistry.ScanFilesSynchronous({SavedReferencerFilename}, true);
+            TArray<FGeneratedAssetRecord> Inventory;
+            if (!ReimportReducedVfx(TEXT("Saved-package reference retention"), Inventory))
+            {
+                return false;
+            }
+            const FString ExpectedReason = FString::Printf(TEXT("A saved package references it (%s)."),
+                *SavedReferencer->GetOutermost()->GetName());
+            for (int32 FrameIndex = 12; FrameIndex < VfxItem.FrameCount; ++FrameIndex)
+            {
+                if (!TestExactRetentionReason(Inventory, FrameIndex, ExpectedReason))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }();
+        if (!TestTrue(TEXT("Restores and saves the original vehicle references"), bSavedReferencesRestored) ||
+            !bSavedReferenceCasePassed)
+        {
+            return false;
+        }
+
+        // Fail after five frames have saved, not at metadata validation or the
+        // source texture. No inventory rewrite or stale cleanup may run here.
+        UPaperSprite* PartialSaveFixture = LoadObject<UPaperSprite>(nullptr, *GetVfxFramePath(5));
+        if (!TestNotNull(TEXT("The partial-save fixture resolves"), PartialSaveFixture))
+        {
+            return false;
+        }
+        const FString PartialSaveFilename = FPackageName::LongPackageNameToFilename(
+            PartialSaveFixture->GetOutermost()->GetName(), FPackageName::GetAssetPackageExtension());
+        const bool bPartialPackageWasDirty = PartialSaveFixture->GetOutermost()->IsDirty();
+        ON_SCOPE_EXIT
+        {
+            // The fixture reimports unchanged pixels/metadata; restore its test
+            // dirty flag even when an assertion aborts before the retry.
+            PartialSaveFixture->GetOutermost()->SetDirtyFlag(bPartialPackageWasDirty);
+        };
+        bool bPartialSaveFileRestored = false;
+        const bool bPartialSaveCasePassed = [&]()
+        {
+            const bool bWasReadOnly = PlatformFile.IsReadOnly(*PartialSaveFilename);
+            ON_SCOPE_EXIT
+            {
+                bPartialSaveFileRestored = PlatformFile.SetReadOnly(*PartialSaveFilename, bWasReadOnly) &&
+                    PlatformFile.IsReadOnly(*PartialSaveFilename) == bWasReadOnly;
+            };
+            UTexture2D* BeforeTexture = LoadObject<UTexture2D>(nullptr, *VfxPaths.TextureObjectPath);
+            if (!TestNotNull(TEXT("Texture resolves before the partial save"), BeforeTexture))
+            {
+                return false;
+            }
+            const FString BeforeInventory = BeforeTexture->GetOutermost()->GetMetaData().GetValue(BeforeTexture, GeneratedInventoryKey);
+            if (!TestTrue(TEXT("Protects the partial-save fixture file"), PlatformFile.SetReadOnly(*PartialSaveFilename, true)))
+            {
+                return false;
+            }
+            FString ObjectPath;
+            FString Summary;
+            FString Error;
+            int32 GeneratedCount = 0;
+            if (!TestFalse(TEXT("A read-only frame fails the import after earlier frames save"),
+                    ImportPixelArtAssets(ReducedVfxItem, ObjectPath, GeneratedCount, Summary, Error)))
+            {
+                return false;
+            }
+            TestEqual(TEXT("Exactly five frames saved before the failure"), GeneratedCount, 5);
+            TestEqual(TEXT("The partial import identifies the blocked output"), Error,
+                FString::Printf(TEXT("Cannot save read-only imported asset package: %s"), *PartialSaveFilename));
+            TestTrue(TEXT("The partial import does not claim completed cleanup"), Summary.IsEmpty());
+            UTexture2D* AfterTexture = LoadObject<UTexture2D>(nullptr, *VfxPaths.TextureObjectPath);
+            if (!TestNotNull(TEXT("Texture remains resolvable after partial failure"), AfterTexture))
+            {
+                return false;
+            }
+            TestEqual(TEXT("Partial failure leaves the ownership inventory unchanged"),
+                FString(AfterTexture->GetOutermost()->GetMetaData().GetValue(AfterTexture, GeneratedInventoryKey)), BeforeInventory);
+            for (int32 FrameIndex = 12; FrameIndex < VfxItem.FrameCount; ++FrameIndex)
+            {
+                const FString FramePath = GetVfxFramePath(FrameIndex);
+                TestNotNull(TEXT("Partial failure keeps the obsolete frame resolvable"), LoadObject<UPaperSprite>(nullptr, *FramePath));
+                TestTrue(TEXT("Partial failure keeps the obsolete frame on disk"), FPaths::FileExists(
+                    FPackageName::LongPackageNameToFilename(FSoftObjectPath(FramePath).GetLongPackageName(),
+                        FPackageName::GetAssetPackageExtension())));
+            }
+            return true;
+        }();
+        if (!TestTrue(TEXT("Restores the partial-save fixture file mode"), bPartialSaveFileRestored) || !bPartialSaveCasePassed)
+        {
+            return false;
+        }
+
+        // Cover the two earlier save boundaries without injecting fake importer
+        // behavior: a protected source package and a protected inventory save.
+        UTexture2D* SaveBoundaryTexture = LoadObject<UTexture2D>(nullptr, *VfxPaths.TextureObjectPath);
+        if (!TestNotNull(TEXT("Source texture for save-boundary cases resolves"), SaveBoundaryTexture)) return false;
+        const FString SourcePackageFilename = FPackageName::LongPackageNameToFilename(
+            SaveBoundaryTexture->GetOutermost()->GetName(), FPackageName::GetAssetPackageExtension());
+        TArray<uint8> SourceBytesBefore;
+        if (!TestTrue(TEXT("Reads source package before save failures"), FFileHelper::LoadFileToArray(SourceBytesBefore, *SourcePackageFilename))) return false;
+        bool bSourceFileRestored = false;
+        const bool bSaveBoundaryCasesPassed = [&]()
+        {
+            const bool bWasReadOnly = PlatformFile.IsReadOnly(*SourcePackageFilename);
+            UPackage* SaveBoundaryPackage = SaveBoundaryTexture->GetOutermost();
+            const bool bWasDirty = SaveBoundaryPackage->IsDirty();
+            ON_SCOPE_EXIT
+            {
+                bSourceFileRestored = PlatformFile.SetReadOnly(*SourcePackageFilename, bWasReadOnly) &&
+                    PlatformFile.IsReadOnly(*SourcePackageFilename) == bWasReadOnly;
+                SaveBoundaryPackage->SetDirtyFlag(bWasDirty);
+            };
+            if (!TestTrue(TEXT("Protects source texture package"), PlatformFile.SetReadOnly(*SourcePackageFilename, true))) return false;
+            FString ObjectPath, Summary, Error;
+            int32 GeneratedCount = 0;
+            TestFalse(TEXT("Read-only source package rejects import"),
+                ImportPixelArtAssets(ReducedVfxItem, ObjectPath, GeneratedCount, Summary, Error));
+            TestEqual(TEXT("Source save failure creates no generated frames"), GeneratedCount, 0);
+            TestEqual(TEXT("Source save failure identifies its package"), Error,
+                FString::Printf(TEXT("Cannot save read-only imported asset package: %s"), *SourcePackageFilename));
+            SaveBoundaryTexture = LoadObject<UTexture2D>(nullptr, *VfxPaths.TextureObjectPath);
+            if (!TestNotNull(TEXT("Source texture remains available after failure"), SaveBoundaryTexture)) return false;
+            TArray<FGeneratedAssetRecord> PreviousRecords;
+            FString InventoryError;
+            const FString SourceIdentity = TestPackId + TEXT(":") + VfxRelativePath;
+            if (!TestTrue(TEXT("Previous inventory remains readable"), ReadGeneratedAssetInventory(
+                SaveBoundaryTexture, SourceIdentity, PreviousRecords, InventoryError) == EGeneratedInventoryState::Valid)) return false;
+            Summary.Reset();
+            Error.Reset();
+            TestTrue(TEXT("Finalization distinguishes completed output import from failed inventory save"),
+                FinalizeGeneratedAssetImport(SaveBoundaryTexture, ReducedVfxItem, VfxPaths, SourceIdentity,
+                    EGeneratedInventoryState::Valid, PreviousRecords, FString(), Summary, Error));
+            TestTrue(TEXT("Inventory-save failure explicitly skips stale cleanup"),
+                Summary.Contains(TEXT("ownership inventory could not be saved, so stale-output cleanup was skipped")));
+            TArray<uint8> SourceBytesAfter;
+            TestTrue(TEXT("Read-only failure leaves persisted source and inventory byte-identical"),
+                FFileHelper::LoadFileToArray(SourceBytesAfter, *SourcePackageFilename) && SourceBytesAfter == SourceBytesBefore);
+            for (int32 FrameIndex = 12; FrameIndex < VfxItem.FrameCount; ++FrameIndex)
+                TestTrue(TEXT("Inventory save failure retains obsolete file"), FPaths::FileExists(
+                    FPackageName::LongPackageNameToFilename(FSoftObjectPath(GetVfxFramePath(FrameIndex)).GetLongPackageName(),
+                        FPackageName::GetAssetPackageExtension())));
+            return true;
+        }();
+        if (!TestTrue(TEXT("Restores source package permissions"), bSourceFileRestored) || !bSaveBoundaryCasesPassed) return false;
+
+        TArray<FGeneratedAssetRecord> VfxInventoryAfterFixtureCleanup;
+        if (!ReimportReducedVfx(TEXT("Post-fixture loaded-reference retention"), VfxInventoryAfterFixtureCleanup))
+        {
+            return false;
+        }
+        for (int32 FrameIndex = 12; FrameIndex < VfxItem.FrameCount; ++FrameIndex)
+        {
+            if (!TestLoadedReferenceRetentionReason(VfxInventoryAfterFixtureCleanup, FrameIndex))
+            {
+                return false;
+            }
+        }
+        TestTrue(TEXT("The smoke-only other-package fixture is not left dirty"), !OtherDirtyPackage->IsDirty());
+        TestTrue(TEXT("The smoke-only dirty stale-output fixture is not left dirty"), !DirtyStalePackage->IsDirty());
+        TestTrue(TEXT("The smoke-only ownership-mismatch fixture is not left dirty"), !OwnershipMismatchPackage->IsDirty());
+        TestTrue(TEXT("Successful retry saves the previously blocked frame"), !PartialSaveFixture->GetOutermost()->IsDirty());
+
         return true;
     }
 #endif
@@ -2560,6 +3041,10 @@ FReply SPixelRacerAssetBrowser::ImportSelectedTexture()
             TEXT("Imported pixel-safe texture and created/updated %d asset(s): %s"),
             GeneratedAssetCount,
             *ObjectPath);
+        // Imports can turn a cached PNG fallback into an available Paper2D
+        // asset. Refresh canvas caches and retain the selected driving vehicle.
+        OnManifestsReloaded.ExecuteIfBound();
+        OnAssetChosen.ExecuteIfBound(SelectedItem->AssetId, SelectedItem->Role);
         if (!CleanupSummary.IsEmpty())
         {
             LastActionMessage += TEXT("\n") + CleanupSummary;

@@ -43,6 +43,7 @@ struct FPixelRacerTrackEditorSession : public TSharedFromThis<FPixelRacerTrackEd
     TArray<FPixelRacerTrackDocument> UndoStack;
     TArray<FPixelRacerTrackDocument> RedoStack;
     bool bEditOpen = false;
+    bool bAutosaveEnabled = true;
 
     void BeginEdit();
     void EndEdit(bool bAutosave = true);

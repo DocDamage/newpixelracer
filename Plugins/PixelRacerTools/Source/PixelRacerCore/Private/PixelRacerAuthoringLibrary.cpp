@@ -3,38 +3,6 @@
 #include "Math/RandomStream.h"
 #include "PixelRacerTrackAuthoringLibrary.h"
 
-namespace PixelRacerLegacyAuthoring
-{
-    static bool PointInsidePolygon(const FVector2D& Point, const TArray<FVector2D>& Polygon)
-    {
-        if (Polygon.Num() < 3)
-        {
-            return false;
-        }
-
-        bool bInside = false;
-        int32 J = Polygon.Num() - 1;
-        for (int32 I = 0; I < Polygon.Num(); ++I)
-        {
-            const FVector2D& Pi = Polygon[I];
-            const FVector2D& Pj = Polygon[J];
-            const bool bCrosses = ((Pi.Y > Point.Y) != (Pj.Y > Point.Y)) &&
-                (Point.X < (Pj.X - Pi.X) * (Point.Y - Pi.Y) / (Pj.Y - Pi.Y) + Pi.X);
-            if (bCrosses)
-            {
-                bInside = !bInside;
-            }
-            J = I;
-        }
-        return bInside;
-    }
-
-    static FString ZoneTag(const FGuid& ZoneId)
-    {
-        return FString::Printf(TEXT("procedural_zone:%s"), *ZoneId.ToString(EGuidFormats::Digits));
-    }
-}
-
 void UPixelRacerAuthoringLibrary::EnsureDefaultLayers(FPixelRacerTrackDocument& Document)
 {
     // Schema v2 stores semantic layer indices directly on placements/control points.
@@ -167,60 +135,55 @@ int32 UPixelRacerAuthoringLibrary::GenerateRacingLines(FPixelRacerTrackDocument&
 
 int32 UPixelRacerAuthoringLibrary::RegenerateProceduralZone(FPixelRacerTrackDocument& Document, int32 ZoneIndex, const TArray<FString>& AssetIds)
 {
-    if (!Document.ProceduralZones.IsValidIndex(ZoneIndex))
+    if (!Document.ProceduralZones.IsValidIndex(ZoneIndex) || AssetIds.IsEmpty())
+    {
+        return 0;
+    }
+
+    TArray<FString> ValidAssetIds;
+    for (const FString& AssetId : AssetIds)
+    {
+        if (!AssetId.TrimStartAndEnd().IsEmpty())
+        {
+            ValidAssetIds.Add(AssetId);
+        }
+    }
+    if (ValidAssetIds.IsEmpty())
     {
         return 0;
     }
 
     FPixelRacerProceduralZone& Zone = Document.ProceduralZones[ZoneIndex];
-    if (!Zone.Id.IsValid())
-    {
-        Zone.Id = FGuid::NewGuid();
-    }
+    const FString PreviousAssetId = Zone.AssetId;
+    const bool bPreviousGenerateTiles = Zone.bGenerateTiles;
+    Zone.AssetId = ValidAssetIds[0];
+    Zone.bGenerateTiles = false;
 
-    const FString Tag = PixelRacerLegacyAuthoring::ZoneTag(Zone.Id);
-    Document.Pieces.RemoveAll([&](const FPixelRacerPiecePlacement& Piece)
+    int32 Count = 0;
+    FString Error;
+    if (!UPixelRacerTrackAuthoringLibrary::GenerateProceduralZone(Document, ZoneIndex, Count, Error))
     {
-        return Piece.bGenerated && !Piece.bManualOverride && Piece.Tags.Contains(Tag);
-    });
-
-    if (AssetIds.IsEmpty() || Zone.Polygon.Num() < 3)
-    {
+        Zone.AssetId = PreviousAssetId;
+        Zone.bGenerateTiles = bPreviousGenerateTiles;
         return 0;
     }
 
-    FVector2D Min(FLT_MAX, FLT_MAX);
-    FVector2D Max(-FLT_MAX, -FLT_MAX);
-    for (const FVector2D& Point : Zone.Polygon)
+    if (ValidAssetIds.Num() > 1)
     {
-        Min.X = FMath::Min(Min.X, Point.X);
-        Min.Y = FMath::Min(Min.Y, Point.Y);
-        Max.X = FMath::Max(Max.X, Point.X);
-        Max.Y = FMath::Max(Max.Y, Point.Y);
-    }
-
-    FRandomStream Random(Zone.Seed);
-    const float Area = FMath::Max(0.0f, (Max.X - Min.X) * (Max.Y - Min.Y));
-    const int32 AttemptCount = FMath::Clamp(FMath::RoundToInt(Area / 18000.0f), 4, 256);
-    int32 Count = 0;
-    for (int32 Attempt = 0; Attempt < AttemptCount; ++Attempt)
-    {
-        const FVector2D Candidate(Random.FRandRange(Min.X, Max.X), Random.FRandRange(Min.Y, Max.Y));
-        if (!PixelRacerLegacyAuthoring::PointInsidePolygon(Candidate, Zone.Polygon))
+        for (FPixelRacerPiecePlacement& Piece : Document.Pieces)
         {
-            continue;
+            if (Piece.SourceZoneId != Zone.Id || !Piece.bGenerated || Piece.bManualOverride || Piece.bLocked)
+            {
+                continue;
+            }
+            const FString SlotKey = FString::Printf(
+                TEXT("%s|%d|%d|%d|palette"),
+                *Zone.Id.ToString(EGuidFormats::Digits),
+                Zone.Seed,
+                Piece.SourceZoneCell.X,
+                Piece.SourceZoneCell.Y);
+            Piece.AssetId = ValidAssetIds[FCrc::StrCrc32(*SlotKey) % ValidAssetIds.Num()];
         }
-
-        const FString& AssetId = AssetIds[Random.RandRange(0, AssetIds.Num() - 1)];
-        FPixelRacerPiecePlacement& Piece = Document.Pieces.AddDefaulted_GetRef();
-        Piece.Id = FGuid::NewGuid();
-        Piece.AssetId = AssetId;
-        Piece.Transform = FTransform(FRotator(0.0f, Random.FRandRange(0.0f, 360.0f), 0.0f), FVector(Candidate, 0.0f));
-        Piece.LayerIndex = Zone.LayerIndex;
-        Piece.bGenerated = true;
-        Piece.bManualOverride = false;
-        Piece.Tags = { TEXT("procedural"), Tag, Zone.RulePreset };
-        ++Count;
     }
     return Count;
 }

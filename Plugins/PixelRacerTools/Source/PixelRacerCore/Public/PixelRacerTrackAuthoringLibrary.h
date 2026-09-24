@@ -65,6 +65,9 @@ public:
     UFUNCTION(BlueprintCallable, Category="Pixel Racer|Authoring|Zones")
     static bool RemoveProceduralZone(FPixelRacerTrackDocument& Document, int32 ZoneIndex);
 
+    UFUNCTION(BlueprintCallable, Category="Pixel Racer|Authoring|Zones")
+    static bool GenerateProceduralZone(UPARAM(ref) FPixelRacerTrackDocument& Document, int32 ZoneIndex, int32& OutGeneratedCount, FString& OutError);
+
     UFUNCTION(BlueprintCallable, Category="Pixel Racer|Authoring|AI")
     static int32 GenerateCheckpoints(FPixelRacerTrackDocument& Document, int32 SplineIndex = 0, float Spacing = 400.0f, bool bReplaceGenerated = true);
 

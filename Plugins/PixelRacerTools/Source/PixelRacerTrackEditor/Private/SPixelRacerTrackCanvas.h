@@ -19,7 +19,8 @@ enum class EPixelRacerZoneDrawMode : uint8
 class SPixelRacerTrackCanvas : public SCompoundWidget
 {
 public:
-    SLATE_BEGIN_ARGS(SPixelRacerTrackCanvas) {}
+    SLATE_BEGIN_ARGS(SPixelRacerTrackCanvas) : _EnableAutosave(true) {}
+        SLATE_ARGUMENT(bool, EnableAutosave)
     SLATE_END_ARGS()
 
     void Construct(const FArguments& InArgs);
@@ -46,6 +47,13 @@ public:
     EPixelRacerZoneDrawMode GetZoneDrawMode() const { return ZoneDrawMode; }
     FString GetZoneDrawModeName() const;
     bool DeleteSelectedZone();
+    const FPixelRacerProceduralZone* GetSelectedZone() const;
+    bool SelectZone(int32 ZoneIndex);
+    bool SelectNextZone();
+    FText GetSelectedZoneSummary() const;
+    bool UseSelectedAssetForZone(FString& OutError);
+    void EditSelectedZone(TFunctionRef<void(FPixelRacerProceduralZone&)> Edit);
+    bool GenerateZones(bool bAllConfiguredZones, int32& OutGeneratedCount, FString& OutError);
     bool SetActiveAsset(const FString& AssetId, const FString& Role);
     void SetAssetPreviewData(const TArray<FPixelRacerAssetPreviewData>& InPreviewData);
     FString GetActiveAssetSummary() const;
@@ -114,6 +122,8 @@ private:
     mutable TMap<FString, TSharedPtr<FSlateDynamicImageBrush>> LoadedSourceBrushCache;
     mutable TMap<FString, TWeakObjectPtr<UPaperSprite>> LoadedSpriteCache;
     mutable TMap<FString, TWeakObjectPtr<UPaperTileSet>> LoadedTileSetCache;
+    mutable TSet<FString> MissingSpritePreviews;
+    mutable TSet<FString> MissingTileSetPreviews;
     FString ActiveZonePreset = TEXT("Grassland");
     EPixelRacerZoneDrawMode ZoneDrawMode = EPixelRacerZoneDrawMode::Rectangle;
     int32 SelectedZoneIndex = INDEX_NONE;

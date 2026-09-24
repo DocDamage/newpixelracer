@@ -1,5 +1,36 @@
 # Pixel Racer development status
 
+## Current milestone: asset-backed zone generation — 2026-09-24
+
+- Procedural zones now generate deterministic tiles or scenery from assigned
+  catalog assets, with density, seed, tile index, scenery spacing, and road clearance.
+- Regeneration preserves manual/locked placements and erased-slot exclusions;
+  shrinking or deleting a zone removes only its unprotected generated output.
+- Editor controls assign assets, select zones, restore erased slots, and generate
+  one zone or all configured zones. Generate Track Details also derives checkpoints,
+  eight grid slots, and racing lines from the primary road in one undo transaction.
+  Missing assets, invalid geometry, and unusable roads reject the entire operation.
+- Geometry, candidate counts, and intersection work are bounded before mutation.
+  Ownership and settings persist through TrackDocument JSON.
+- Import success refreshes canvas preview metadata; unavailable imported preview
+  objects are negatively cached until the next catalog refresh.
+- Combined implementation builds successfully in UE 5.8.3. Eight core generation
+  tests, the editor transaction/catalog/render test, and the expanded importer
+  smoke test passed live with zero errors/warnings. QuickCheck and scoped diff
+  whitespace checks pass. Independent integration review found the missing-road
+  success-reporting issue; it is fixed and covered by an atomicity regression.
+- Evidence: `Saved/PixelRacer/Validation/procedural_zone_acceptance.json`,
+  `procedural_zone_preview.png`, and `procedural_zone_acceptance.log`;
+  final corrective build: `Saved/Logs/Procedural-Zones-Acceptance-Build.log`.
+  Initial acceptance exposed a rejected-polygon test fixture indexing an absent
+  zone; fixture setup and indexing prerequisites are corrected.
+- MCP connected, PIE stopped, SmokeFilter restored, no dirty persistent packages,
+  and sandbox export/autosave hashes unchanged. No commit or push.
+- Next substantial milestone: current-document Play Track/driving acceptance and
+  remaining Phase C interactive stale deletion and full canvas/Rescan gestures.
+  This batch verifies source-PNG canvas rendering and catalog refresh behavior;
+  it does not claim the complete interactive Phase C acceptance matrix.
+
 ## v0.4-dev Asset Browser + procedural-zone editing — implemented in source
 
 Everything from v0.3-dev remains, plus:
@@ -192,3 +223,81 @@ The user confirmed **all remaining checks worked** on the rebuilt editor: road p
 - Phase C still needs the stale-output deletion/retention matrix and visual
   canvas/Rescan acceptance. Partial import/save failures and invalid vehicle/VFX
   metadata also remain outside this regression.
+
+### Phase C stale-output reference retention case — 2026-09-24
+
+- Extended `ImportReimportSmoke` to reimport the Smoke sheet with a smaller
+  valid frame grid while a transient data asset holds loaded references to the
+  three obsolete frames. The test checks those assets stay resolvable and in the
+  ownership inventory with the loaded-reference reason.
+- QuickCheck passes with 0 errors and 0 warnings. UnrealBuildTool compiled the
+  changed translation unit, but could not relink the editor module because the
+  running editor holds its DLL. The Live Coding compile hit its 180-second cap
+  with `InProgress` and no patched module reported, so the new case is not yet
+  live-verified. Rebuild after restarting the editor, then rerun the importer
+  automation before treating this retention case as accepted.
+
+### Phase C loaded-reference retention acceptance — 2026-09-24
+
+- Rebuilt and reopened UE 5.8.3; MCP responds and confirms `PixelRacer`.
+- The first live run retained frames 12–14 but failed the expected-reason checks:
+  dirty native `/Script/SlateCore` incorrectly triggered the unsaved-content gate.
+  `FindOtherDirtyPackage` now excludes `PKG_CompiledIn` packages. Real dirty
+  content packages still block cleanup; loaded references remain checked.
+- The test now holds its transient referencer with `TStrongObjectPtr` so garbage
+  collection cannot invalidate the fixture, and failures include the actual reason.
+- Final `ImportReimportSmoke` passed in 1.617 seconds with zero errors and warnings,
+  verifying imports/reimports plus loaded-reference retention and inventory reasons.
+  Evidence: `Saved/PixelRacer/Validation/phase_c_mcp_loaded_retention.json` and
+  matching `.log`; pre-fix evidence: `phase_c_retention_before_fix.log`.
+- Final build succeeded (`Saved/Logs/PhaseC-Retention-Build-noaccel.log`, invoked
+  with `-NoUBA -NoUBALocal` after a stalled build). Existing MCP bridge deprecation
+  warnings remain. QuickCheck: zero errors/warnings; focused review's lifetime
+  finding is addressed. SmokeFilter restored; PIE stopped; no dirty persistent
+  packages. No commit or push.
+- Next bounded work: remaining stale-output deletion/retention cases (saved
+  references, dirty/read-only outputs, ownership mismatches and partial failures),
+  followed by visual canvas/Rescan acceptance. Phase C is still open.
+
+### Phase C retention safety matrix — 2026-09-24
+
+- Extended the production importer regression with four isolated safety cases:
+  another dirty persistent package, a dirty stale sprite, a read-only stale
+  sprite file, and mismatched generated-owner metadata.
+- Each case asserts its exact retention reason, the retained-three summary,
+  all 16 inventory entries, and all three obsolete sprites remaining resolvable
+  and on disk. Scoped restoration is checked; a final reimport verifies reasons
+  return to loaded-reference retention after fixture cleanup.
+- UE 5.8.3 incremental build succeeded in 24.45 seconds; log:
+  `Saved/Logs/PhaseC-Retention-Matrix-Build.log`. QuickCheck and scoped whitespace
+  validation passed; parent review corrections were incorporated before building.
+- Live `ImportReimportSmoke` passed in 2.559 seconds with zero errors/warnings.
+  Evidence: `Saved/PixelRacer/Validation/phase_c_mcp_retention_matrix.json` and
+  matching `.log`. MCP remains connected, PIE stopped, SmokeFilter restored,
+  no dirty persistent packages, and sandbox export/autosave hashes unchanged.
+- Next bounded work: saved-package reference retention and partial-import/save
+  failure cases, then confirmed stale deletion and visual canvas/Rescan acceptance.
+  No deletion behavior or full Phase C completion is claimed. No commit or push.
+
+### Phase C saved-reference and partial-save recovery — 2026-09-24
+
+- `SaveImportedAsset` now reports the exact read-only package before attempting
+  Unreal's package save. A generated-frame save failure still stops import before
+  inventory finalization or stale cleanup.
+- Added a saved-reference fixture using the run's generated vehicle definition;
+  after saving and refreshing the asset registry, all three stale VFX frames must
+  record that saved package as the retention reason. Original references are
+  restored and saved before the next case.
+- Added a failure on current VFX frame 5: five earlier frames save, the protected
+  file fails, the in-memory ownership inventory remains unchanged, and stale
+  frame files survive. Restoring write access and retrying completes the import
+  and refreshes all retention reasons. Scoped fixture cleanup covers early exits.
+- UE 5.8.3 build succeeded in 26.56 seconds; QuickCheck passed with zero errors
+  and warnings. Live `ImportReimportSmoke` passed in 6.333 seconds with zero
+  errors/warnings. Evidence: `Saved/PixelRacer/Validation/phase_c_mcp_partial_save.json`
+  and matching `.log`; build log: `Saved/Logs/PhaseC-Partial-Save-Build.log`.
+- Editor remains connected via MCP, PIE stopped, SmokeFilter restored, no dirty
+  persistent packages, and sandbox export/autosave hashes unchanged. No commit/push.
+- Next: confirmed stale deletion and visual canvas/Rescan acceptance. Source
+  texture and inventory-save failures remain distinct uncovered stages; do not
+  claim the entire failure matrix or Phase C complete.
