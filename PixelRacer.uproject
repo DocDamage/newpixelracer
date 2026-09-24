@@ -28,6 +28,11 @@
     {
       "Name": "PixelRacerTools",
       "Enabled": true
+    },
+    {
+      "Name": "UnrealMCPBridge",
+      "Enabled": true,
+      "TargetAllowList": ["Editor"]
     }
   ]
 }

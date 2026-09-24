@@ -1,0 +1,12 @@
+diff --git a/Plugins/PixelRacerTools/Source/PixelRacerTrackEditor/Private/SPixelRacerAssetBrowser.cpp b/Plugins/PixelRacerTools/Source/PixelRacerTrackEditor/Private/SPixelRacerAssetBrowser.cpp
+--- a/Plugins/PixelRacerTools/Source/PixelRacerTrackEditor/Private/SPixelRacerAssetBrowser.cpp
++++ b/Plugins/PixelRacerTools/Source/PixelRacerTrackEditor/Private/SPixelRacerAssetBrowser.cpp
+@@ -136,7 +136,7 @@
+             return false;
+         }
+ 
+-        OutPaths.TextureObjectPath = FString::Printf(TEXT("%s.%s"), *OutPaths.PackagePath, *OutPaths.AssetName);
++        OutPaths.TextureObjectPath = FString::Printf(TEXT("%s/%s.%s"), *OutPaths.PackagePath, *OutPaths.AssetName, *OutPaths.AssetName);
+         const FString SpriteName = OutPaths.AssetName + TEXT("_Sprite");
+         const FString TileSetName = OutPaths.AssetName + TEXT("_TileSet");
+         OutPaths.SpriteObjectPath = FString::Printf(TEXT("%s/%s.%s"), *OutPaths.PackagePath, *SpriteName, *SpriteName);
