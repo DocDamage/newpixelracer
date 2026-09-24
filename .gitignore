@@ -13,3 +13,4 @@ Plugins/*/Binaries/
 Plugins/*/Intermediate/
 __pycache__/
 *.py[cod]
+Content/PixelRacer/Imported/pixelracer_automation_import_smoke_*/

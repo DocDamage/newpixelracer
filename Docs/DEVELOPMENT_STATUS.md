@@ -118,3 +118,77 @@ The user confirmed **all remaining checks worked** on the rebuilt editor: road p
 - Verification on this source revision: `Tools/BuildEditorOnce.bat` succeeded; `python Tools/quick_check.py` reported 0 errors and 0 warnings; `git diff --check` passed; the focused independent cleanup review found no actionable issues.
 - Live-check status: the editor process launched and responds, but the Unreal MCP bridge refuses connections; no import/delete/PIE regression was run in this turn.
 - Still required in a disposable test pack and live editor: unchanged reimport, direction/frame count decreases and increases, role change, invalid metadata, partial import/save failure, reference retention, legacy untagged outputs, source-control/read-only behavior, and cancellation/retry of the delete confirmation. No runtime cleanup or PIE claim is made yet.
+
+### Phase C live MCP importer regression — 2026-09-23
+
+- Continued from `042893d` with the repaired bridge; confirmed UE 5.8.3, project
+  `PixelRacer`, and PIE stopped. The historical continuation review predates this
+  source: its proposed path fix and ownership/pruning implementation already exist.
+- Added `PixelRacer.TrackEditor.AssetBrowser.ImportReimportSmoke`, which calls the
+  production importer with GUID-isolated copies of the Wheels barrier and grass
+  PNGs. It checks resolvable texture object paths, pixel settings and dimensions,
+  generated sprite/TileSet assets, unchanged environment reimport, and rejection
+  of mismatched dimensions while retaining the ownership inventory.
+- The first live MCP run passed with zero errors and four missing-object warnings
+  from optional first-import lookups. Changed those optional lookups to
+  `LOAD_NoWarn`; required sprite lookups and explicit import failure reporting
+  retain their diagnostics. Saved initial evidence in
+  `Saved/PixelRacer/Validation/phase_c_mcp_before_warning_fix.json`.
+- The final changed source builds successfully with `Tools/BuildEditorOnce.bat`;
+  log: `Saved/Logs/PhaseC-MCP-Build-final.log`. QuickCheck: zero errors and warnings.
+  Changed-file whitespace validation passes; the pre-existing trailing blank
+  line in `Config/DefaultEngine.ini` was left untouched.
+- Test invocation and artifact locations are in `PHASE_C_MCP_VALIDATION.md`.
+- Final live MCP regression on the rebuilt source: **passed, zero errors, zero
+  warnings**, completed in 0.215 seconds. Evidence:
+  `Saved/PixelRacer/Validation/phase_c_mcp_final.json`. The first run's saved
+  barrier texture also loaded after restart: 144×16, BGRA8, one mip, Pixels2D,
+  editor-icon compression, and no streaming. The bridge requires the shorter
+  package path here because its input validator caps paths at 240 characters;
+  texture dimensions settled after asynchronous resource compilation.
+  Focused review found no actionable regression in the optional-lookup change.
+- The editor is reopened with MCP responding. Sandbox export/autosave hashes
+  match their pre-test backups. The automation filter was restored to SmokeFilter.
+  No commit or push was performed.
+- Test artifact handling:
+  Generated smoke assets are narrowly ignored by Git. The existing sandbox export
+  and autosave were backed up in `Saved/PixelRacer/Validation/pre_mcp_phase_c/`
+  before the editor restart.
+- Phase C remains open: visual canvas/Rescan behavior, vehicle/VFX imports and
+  driving in PIE, and the complete stale-output deletion/retention matrix still
+  need live acceptance. This regression covers only environment and tileset
+  imports, unchanged environment reimport, and dimension-mismatch rejection.
+
+### Phase C runtime preview and vehicle PIE — 2026-09-24
+
+- Reloaded the saved sandbox document in the Track Editor and verified the
+  current-track preview spawned `PixelRacerTrackPreviewActor` and a possessed
+  `PixelRacerArcadeVehiclePawn` in PIE.
+- Imported `Bologna Superbike` from the Asset Browser; the PIE pawn's
+  `VehicleDefinition` resolved to its generated project asset. A short `W`
+  input moved the pawn, and `R` returned it to its exact starting transform.
+- Captured the PIE viewport at
+  `Saved/PixelRacer/Validation/phase_c_mcp_pie.png`; machine-readable MCP
+  evidence is in `Saved/PixelRacer/Validation/phase_c_mcp_pie.json`. PIE was
+  stopped and `pie.is_running` confirmed zero worlds afterward.
+- This verifies one selected vehicle's import-to-PIE path. It does not cover the
+  full VFX/vehicle metadata matrix, visual canvas/Rescan behavior, or stale-output
+  deletion and retention cases. Direct MCP asset-property inspection of the
+  generated vehicle definition was also blocked by the bridge's 240-character
+  asset-path limit; the pawn's live property read confirmed the object reference.
+
+### Phase C vehicle and VFX importer regression — 2026-09-24
+
+- Extended `PixelRacer.TrackEditor.AssetBrowser.ImportReimportSmoke` to import
+  the Bologna Superbike directional sheet and Smoke VFX sheet alongside the
+  existing environment and tileset fixtures. It verifies all 16 vehicle sprites
+  and their definition references, all 15 VFX frame sprites, their source
+  textures, and stable outputs after unchanged reimports.
+- Rebuilt the editor target successfully with UE 5.8.3. The live MCP automation
+  run passed in 1.474 seconds with zero errors and zero warnings. Evidence:
+  `Saved/PixelRacer/Validation/phase_c_mcp_import_roles.json`.
+- Restored the `SmokeFilter`; PIE is stopped. `package.list_dirty` reports no
+  dirty persistent packages.
+- Phase C still needs the stale-output deletion/retention matrix and visual
+  canvas/Rescan acceptance. Partial import/save failures and invalid vehicle/VFX
+  metadata also remain outside this regression.

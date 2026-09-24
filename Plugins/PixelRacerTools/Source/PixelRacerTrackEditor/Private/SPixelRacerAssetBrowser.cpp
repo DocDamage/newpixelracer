@@ -5,6 +5,10 @@
 #include "AssetToolsModule.h"
 #include "Brushes/SlateDynamicImageBrush.h"
 #include "Containers/StringConv.h"
+#if WITH_DEV_AUTOMATION_TESTS
+#include "Misc/AutomationTest.h"
+#include "Misc/ScopeExit.h"
+#endif
 #include "Dom/JsonObject.h"
 #include "Editor.h"
 #include "Factories/DataAssetFactory.h"
@@ -934,7 +938,8 @@ namespace PixelRacerAssetBrowser
         FString& OutError)
     {
         const FString ObjectPath = FString::Printf(TEXT("%s/%s.%s"), *PackagePath, *SpriteName, *SpriteName);
-        UPaperSprite* Sprite = LoadObject<UPaperSprite>(nullptr, *ObjectPath);
+        // A missing output is normal on first import; creation failures are reported below.
+        UPaperSprite* Sprite = LoadObject<UPaperSprite>(nullptr, *ObjectPath, {}, LOAD_NoWarn);
         if (Sprite == nullptr)
         {
             UPaperSpriteFactory* SpriteFactory = NewObject<UPaperSpriteFactory>(GetTransientPackage());
@@ -987,7 +992,7 @@ namespace PixelRacerAssetBrowser
         FString& OutError)
     {
         const FString ObjectPath = FString::Printf(TEXT("%s/%s.%s"), *PackagePath, *AssetName, *AssetName);
-        UPaperTileSet* TileSet = LoadObject<UPaperTileSet>(nullptr, *ObjectPath);
+        UPaperTileSet* TileSet = LoadObject<UPaperTileSet>(nullptr, *ObjectPath, {}, LOAD_NoWarn);
         if (TileSet == nullptr)
         {
             UPaperTileSetFactory* TileSetFactory = NewObject<UPaperTileSetFactory>(GetTransientPackage());
@@ -1171,7 +1176,7 @@ namespace PixelRacerAssetBrowser
     {
         const FString VehicleDefinitionName = AssetName + TEXT("_Vehicle");
         const FString ObjectPath = FString::Printf(TEXT("%s/%s.%s"), *PackagePath, *VehicleDefinitionName, *VehicleDefinitionName);
-        UPixelRacerVehicleDefinition* Definition = LoadObject<UPixelRacerVehicleDefinition>(nullptr, *ObjectPath);
+        UPixelRacerVehicleDefinition* Definition = LoadObject<UPixelRacerVehicleDefinition>(nullptr, *ObjectPath, {}, LOAD_NoWarn);
         if (Definition == nullptr)
         {
             UDataAssetFactory* Factory = NewObject<UDataAssetFactory>(GetTransientPackage());
@@ -1420,7 +1425,8 @@ namespace PixelRacerAssetBrowser
         const FString& PackagePath = ImportedPaths.PackagePath;
         const FString& AssetName = ImportedPaths.AssetName;
         const FString SourceIdentity = Item.PackId + TEXT(":") + RelativePath;
-        UTexture2D* PreviousSourceTexture = LoadObject<UTexture2D>(nullptr, *ImportedPaths.TextureObjectPath);
+        // No previous source texture or inventory exists on first import.
+        UTexture2D* PreviousSourceTexture = LoadObject<UTexture2D>(nullptr, *ImportedPaths.TextureObjectPath, {}, LOAD_NoWarn);
         TArray<FGeneratedAssetRecord> PreviousRecords;
         FString InventoryReadError;
         const EGeneratedInventoryState InventoryState = ReadGeneratedAssetInventory(
@@ -1592,6 +1598,470 @@ namespace PixelRacerAssetBrowser
             OutCleanupSummary,
             OutError);
     }
+
+#if WITH_DEV_AUTOMATION_TESTS
+    IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+        FPixelRacerAssetBrowserImportReimportSmokeTest,
+        "PixelRacer.TrackEditor.AssetBrowser.ImportReimportSmoke",
+        EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+    bool FPixelRacerAssetBrowserImportReimportSmokeTest::RunTest(const FString& Parameters)
+    {
+        (void)Parameters;
+
+        if (!GEditor || GEditor->PlayWorld)
+        {
+            AddError(TEXT("Run the importer smoke test in the editor with PIE stopped."));
+            return false;
+        }
+
+        const FString RunId = FGuid::NewGuid().ToString(EGuidFormats::Digits);
+        const FString TestPackId = FString::Printf(TEXT("pixelracer_automation_import_smoke_%s"), *RunId);
+        AddInfo(FString::Printf(TEXT("Isolated import test pack: %s"), *TestPackId));
+        const FString TestSourceRoot = FPaths::Combine(
+            FPaths::ProjectSavedDir(), TEXT("Automation"), TEXT("PixelRacerAssetBrowserImportSmoke"), RunId);
+        ON_SCOPE_EXIT
+        {
+            IFileManager::Get().DeleteDirectory(*TestSourceRoot, false, true);
+        };
+
+        const FString WheelsSourceRoot = FPaths::Combine(FPaths::ProjectDir(), TEXT("SourceArt/WheelsInPixels"));
+        const auto CopyTestSource = [this, &TestSourceRoot, &WheelsSourceRoot](
+            const FString& SourceRelativePath,
+            const FString& DestinationRelativePath)
+        {
+            const FString SourceFile = FPaths::Combine(WheelsSourceRoot, SourceRelativePath);
+            const FString DestinationFile = FPaths::Combine(TestSourceRoot, DestinationRelativePath);
+            const FString DestinationDirectory = FPaths::GetPath(DestinationFile);
+            if (!IFileManager::Get().MakeDirectory(*DestinationDirectory, true))
+            {
+                AddError(FString::Printf(TEXT("Could not create automation-test source directory '%s'."), *DestinationDirectory));
+                return false;
+            }
+            if (IFileManager::Get().Copy(*DestinationFile, *SourceFile) != COPY_OK)
+            {
+                AddError(FString::Printf(TEXT("Could not copy WheelsInPixels source '%s' into the automation-test source pack."), *SourceRelativePath));
+                return false;
+            }
+            return true;
+        };
+
+        const FString EnvironmentRelativePath = TEXT("Environment/barrier_red.png");
+        const FString TileSetRelativePath = TEXT("Tilesets/grass.png");
+        const FString VehicleRelativePath = TEXT("Bikes/Bologna_Superbike/Bologna_Superbike.png");
+        const FString VfxRelativePath = TEXT("VFX/Smoke/Smoke-Sheet.png");
+        if (!CopyTestSource(TEXT("Enviroment/barrier_red.png"), EnvironmentRelativePath) ||
+            !CopyTestSource(TileSetRelativePath, TileSetRelativePath) ||
+            !CopyTestSource(VehicleRelativePath, VehicleRelativePath) ||
+            !CopyTestSource(VfxRelativePath, VfxRelativePath))
+        {
+            return false;
+        }
+
+        const FString EnvironmentSourceFile = FPaths::Combine(TestSourceRoot, EnvironmentRelativePath);
+        const FString TileSetSourceFile = FPaths::Combine(TestSourceRoot, TileSetRelativePath);
+        const FString VehicleSourceFile = FPaths::Combine(TestSourceRoot, VehicleRelativePath);
+        const FString VfxSourceFile = FPaths::Combine(TestSourceRoot, VfxRelativePath);
+        FIntPoint EnvironmentDimensions;
+        FIntPoint TileSetDimensions;
+        FIntPoint VehicleDimensions;
+        FIntPoint VfxDimensions;
+        if (!TestTrue(TEXT("Copies the WheelsInPixels environment PNG into the isolated test pack"),
+                ReadPngDimensions(EnvironmentSourceFile, EnvironmentDimensions)) ||
+            !TestTrue(TEXT("Copies the WheelsInPixels tileset PNG into the isolated test pack"),
+                ReadPngDimensions(TileSetSourceFile, TileSetDimensions)) ||
+            !TestTrue(TEXT("Copies the WheelsInPixels vehicle PNG into the isolated test pack"),
+                ReadPngDimensions(VehicleSourceFile, VehicleDimensions)) ||
+            !TestTrue(TEXT("Copies the WheelsInPixels VFX PNG into the isolated test pack"),
+                ReadPngDimensions(VfxSourceFile, VfxDimensions)))
+        {
+            return false;
+        }
+        TestTrue(TEXT("The Bologna Superbike sheet matches its 16-frame manifest grid"),
+            VehicleDimensions == FIntPoint(736, 54));
+        TestTrue(TEXT("The Smoke sheet matches its 3-by-5 manifest grid"),
+            VfxDimensions == FIntPoint(192, 320));
+
+        FPixelRacerAssetBrowserItem EnvironmentItem;
+        EnvironmentItem.PackId = TestPackId;
+        EnvironmentItem.AssetId = TEXT("automation_smoke_barrier");
+        EnvironmentItem.RelativePath = EnvironmentRelativePath;
+        EnvironmentItem.SourceRoot = TestSourceRoot;
+        EnvironmentItem.Role = TEXT("environment_piece");
+        EnvironmentItem.Width = EnvironmentDimensions.X;
+        EnvironmentItem.Height = EnvironmentDimensions.Y;
+
+        FImportedAssetPaths EnvironmentPaths;
+        FString BuildPathsError;
+        if (!TestTrue(TEXT("Builds the isolated environment output paths"),
+                BuildImportedAssetPaths(EnvironmentItem, EnvironmentPaths, BuildPathsError)))
+        {
+            AddError(BuildPathsError);
+            return false;
+        }
+
+        FString EnvironmentObjectPath;
+        FString ImportSummary;
+        FString ImportError;
+        int32 GeneratedAssetCount = 0;
+        if (!TestTrue(TEXT("Imports the isolated environment PNG"),
+                ImportPixelArtAssets(
+                    EnvironmentItem,
+                    EnvironmentObjectPath,
+                    GeneratedAssetCount,
+                    ImportSummary,
+                    ImportError)))
+        {
+            AddError(ImportError);
+            return false;
+        }
+        TestEqual(TEXT("The import reports the actual texture object path"),
+            EnvironmentObjectPath, EnvironmentPaths.TextureObjectPath);
+        TestTrue(TEXT("The environment import generates a Paper2D output"), GeneratedAssetCount >= 1);
+
+        UTexture2D* EnvironmentTexture = LoadObject<UTexture2D>(nullptr, *EnvironmentObjectPath);
+        if (!TestNotNull(TEXT("The reported environment texture object path resolves"), EnvironmentTexture))
+        {
+            return false;
+        }
+        TestEqual(TEXT("The resolved environment texture has the reported object path"),
+            EnvironmentTexture->GetPathName(), EnvironmentObjectPath);
+        TestTrue(TEXT("The environment texture keeps nearest-neighbour filtering"),
+            EnvironmentTexture->Filter == TF_Nearest);
+        TestTrue(TEXT("The environment texture disables mip generation"),
+            EnvironmentTexture->MipGenSettings == TMGS_NoMipmaps);
+        TestTrue(TEXT("The environment texture uses the Pixels2D texture group"),
+            EnvironmentTexture->LODGroup == TEXTUREGROUP_Pixels2D);
+        TestTrue(TEXT("The environment texture uses editor-icon compression"),
+            EnvironmentTexture->CompressionSettings == TC_EditorIcon);
+        TestTrue(TEXT("The environment texture never streams"), EnvironmentTexture->NeverStream);
+        TestTrue(TEXT("The environment texture preserves its source width"),
+            EnvironmentTexture->GetImportedSize().X == EnvironmentDimensions.X);
+        TestTrue(TEXT("The environment texture preserves its source height"),
+            EnvironmentTexture->GetImportedSize().Y == EnvironmentDimensions.Y);
+        TestNotNull(TEXT("The environment import generates its sprite"),
+            LoadObject<UPaperSprite>(nullptr, *EnvironmentPaths.SpriteObjectPath));
+
+        TArray<FGeneratedAssetRecord> InventoryBeforeInvalidImport;
+        FString InventoryReadError;
+        if (!TestTrue(TEXT("The environment import writes a valid ownership inventory"),
+                ReadGeneratedAssetInventory(
+                    EnvironmentTexture,
+                    TestPackId + TEXT(":") + EnvironmentRelativePath,
+                    InventoryBeforeInvalidImport,
+                    InventoryReadError) == EGeneratedInventoryState::Valid))
+        {
+            AddError(InventoryReadError);
+            return false;
+        }
+
+        FString ReimportObjectPath;
+        FString ReimportSummary;
+        FString ReimportError;
+        int32 ReimportGeneratedAssetCount = 0;
+        if (!TestTrue(TEXT("Reimports the isolated environment PNG"),
+                ImportPixelArtAssets(
+                    EnvironmentItem,
+                    ReimportObjectPath,
+                    ReimportGeneratedAssetCount,
+                    ReimportSummary,
+                    ReimportError)))
+        {
+            AddError(ReimportError);
+            return false;
+        }
+        TestEqual(TEXT("Reimport keeps the same texture object path"),
+            ReimportObjectPath, EnvironmentPaths.TextureObjectPath);
+        TestTrue(TEXT("Reimport keeps the environment sprite generated"), ReimportGeneratedAssetCount >= 1);
+        UTexture2D* ReimportedEnvironmentTexture = LoadObject<UTexture2D>(nullptr, *ReimportObjectPath);
+        if (!TestNotNull(TEXT("The reimported environment texture object path resolves"), ReimportedEnvironmentTexture))
+        {
+            return false;
+        }
+        TestTrue(TEXT("Reimport preserves nearest-neighbour filtering"),
+            ReimportedEnvironmentTexture->Filter == TF_Nearest);
+        TestTrue(TEXT("Reimport preserves disabled mip generation"),
+            ReimportedEnvironmentTexture->MipGenSettings == TMGS_NoMipmaps);
+        TestTrue(TEXT("Reimport preserves the Pixels2D texture group"),
+            ReimportedEnvironmentTexture->LODGroup == TEXTUREGROUP_Pixels2D);
+
+        FPixelRacerAssetBrowserItem InvalidEnvironmentItem = EnvironmentItem;
+        InvalidEnvironmentItem.Width = EnvironmentDimensions.X + 1;
+        FString InvalidObjectPath;
+        FString InvalidSummary;
+        FString InvalidError;
+        int32 InvalidGeneratedAssetCount = 0;
+        TestFalse(TEXT("Rejects environment metadata that disagrees with the PNG dimensions"),
+            ImportPixelArtAssets(
+                InvalidEnvironmentItem,
+                InvalidObjectPath,
+                InvalidGeneratedAssetCount,
+                InvalidSummary,
+                InvalidError));
+        TestTrue(TEXT("Invalid environment metadata reports a dimension error"),
+            InvalidError.Contains(TEXT("dimensions do not match")));
+
+        TArray<FGeneratedAssetRecord> InventoryAfterInvalidImport;
+        FString InventoryAfterInvalidError;
+        UTexture2D* TextureAfterInvalidImport = LoadObject<UTexture2D>(nullptr, *EnvironmentPaths.TextureObjectPath);
+        if (!TestNotNull(TEXT("Rejected metadata leaves the existing environment texture resolvable"), TextureAfterInvalidImport) ||
+            !TestTrue(TEXT("Rejected metadata preserves a valid ownership inventory"),
+                ReadGeneratedAssetInventory(
+                    TextureAfterInvalidImport,
+                    TestPackId + TEXT(":") + EnvironmentRelativePath,
+                    InventoryAfterInvalidImport,
+                    InventoryAfterInvalidError) == EGeneratedInventoryState::Valid))
+        {
+            AddError(InventoryAfterInvalidError);
+            return false;
+        }
+        const auto HasInventoryRecord = [](const TArray<FGeneratedAssetRecord>& Records, const FString& ObjectPath)
+        {
+            return Records.ContainsByPredicate([&ObjectPath](const FGeneratedAssetRecord& Record)
+            {
+                return Record.ObjectPath == ObjectPath;
+            });
+        };
+        TestTrue(TEXT("Rejected metadata preserves the texture inventory record"),
+            HasInventoryRecord(InventoryAfterInvalidImport, EnvironmentPaths.TextureObjectPath));
+        TestTrue(TEXT("Rejected metadata preserves the sprite inventory record"),
+            HasInventoryRecord(InventoryAfterInvalidImport, EnvironmentPaths.SpriteObjectPath));
+        TestTrue(TEXT("The successful import had the texture inventory record before invalid metadata"),
+            HasInventoryRecord(InventoryBeforeInvalidImport, EnvironmentPaths.TextureObjectPath));
+        TestTrue(TEXT("The successful import had the sprite inventory record before invalid metadata"),
+            HasInventoryRecord(InventoryBeforeInvalidImport, EnvironmentPaths.SpriteObjectPath));
+
+        FPixelRacerAssetBrowserItem TileSetItem;
+        TileSetItem.PackId = TestPackId;
+        TileSetItem.AssetId = TEXT("automation_smoke_grass_tileset");
+        TileSetItem.RelativePath = TileSetRelativePath;
+        TileSetItem.SourceRoot = TestSourceRoot;
+        TileSetItem.Role = TEXT("tileset");
+        TileSetItem.Width = TileSetDimensions.X;
+        TileSetItem.Height = TileSetDimensions.Y;
+        TileSetItem.TileWidth = 64;
+        TileSetItem.TileHeight = 64;
+        TileSetItem.Columns = 3;
+        TileSetItem.Rows = 1;
+        TileSetItem.TileCount = 3;
+
+        FImportedAssetPaths TileSetPaths;
+        FString TileSetPathsError;
+        if (!TestTrue(TEXT("Builds the isolated tileset output paths"),
+                BuildImportedAssetPaths(TileSetItem, TileSetPaths, TileSetPathsError)))
+        {
+            AddError(TileSetPathsError);
+            return false;
+        }
+
+        FString TileSetObjectPath;
+        FString TileSetImportSummary;
+        FString TileSetImportError;
+        int32 TileSetGeneratedAssetCount = 0;
+        if (!TestTrue(TEXT("Imports the isolated WheelsInPixels tileset PNG"),
+                ImportPixelArtAssets(
+                    TileSetItem,
+                    TileSetObjectPath,
+                    TileSetGeneratedAssetCount,
+                    TileSetImportSummary,
+                    TileSetImportError)))
+        {
+            AddError(TileSetImportError);
+            return false;
+        }
+        TestEqual(TEXT("The tileset import reports the actual texture object path"),
+            TileSetObjectPath, TileSetPaths.TextureObjectPath);
+        TestNotNull(TEXT("The reported tileset texture object path resolves"),
+            LoadObject<UTexture2D>(nullptr, *TileSetObjectPath));
+        TestNotNull(TEXT("The tileset import generates its Paper2D tile set"),
+            LoadObject<UPaperTileSet>(nullptr, *TileSetPaths.TileSetObjectPath));
+        TestTrue(TEXT("The tileset import generates a Paper2D output"), TileSetGeneratedAssetCount >= 1);
+
+        FPixelRacerAssetBrowserItem VehicleItem;
+        VehicleItem.PackId = TestPackId;
+        VehicleItem.AssetId = TEXT("automation_smoke_bologna_vehicle");
+        VehicleItem.DisplayName = TEXT("Bologna Superbike smoke vehicle");
+        VehicleItem.RelativePath = VehicleRelativePath;
+        VehicleItem.SourceRoot = TestSourceRoot;
+        VehicleItem.Role = TEXT("vehicle_sprite_sheet");
+        VehicleItem.Width = VehicleDimensions.X;
+        VehicleItem.Height = VehicleDimensions.Y;
+        VehicleItem.DirectionCount = 16;
+        VehicleItem.CellWidth = 46;
+        VehicleItem.CellHeight = 54;
+
+        FImportedAssetPaths VehiclePaths;
+        FString VehiclePathsError;
+        if (!TestTrue(TEXT("Builds the isolated vehicle output paths"),
+                BuildImportedAssetPaths(VehicleItem, VehiclePaths, VehiclePathsError)))
+        {
+            AddError(VehiclePathsError);
+            return false;
+        }
+
+        FString VehicleObjectPath;
+        FString VehicleImportSummary;
+        FString VehicleImportError;
+        int32 VehicleGeneratedAssetCount = 0;
+        if (!TestTrue(TEXT("Imports the isolated Bologna Superbike sprite sheet"),
+                ImportPixelArtAssets(
+                    VehicleItem,
+                    VehicleObjectPath,
+                    VehicleGeneratedAssetCount,
+                    VehicleImportSummary,
+                    VehicleImportError)))
+        {
+            AddError(VehicleImportError);
+            return false;
+        }
+        TestEqual(TEXT("The vehicle import reports its texture object path"),
+            VehicleObjectPath, VehiclePaths.TextureObjectPath);
+        TestEqual(TEXT("Vehicle import creates all directional sprites and its definition"),
+            VehicleGeneratedAssetCount, VehicleItem.DirectionCount + 1);
+        UTexture2D* VehicleTexture = LoadObject<UTexture2D>(nullptr, *VehicleObjectPath);
+        UPixelRacerVehicleDefinition* VehicleDefinition = LoadObject<UPixelRacerVehicleDefinition>(
+            nullptr, *VehiclePaths.VehicleDefinitionObjectPath);
+        if (!TestNotNull(TEXT("The vehicle texture object path resolves"), VehicleTexture) ||
+            !TestNotNull(TEXT("The vehicle definition object path resolves"), VehicleDefinition))
+        {
+            return false;
+        }
+        TestEqual(TEXT("The vehicle definition preserves the directional frame count"),
+            VehicleDefinition->DirectionCount, VehicleItem.DirectionCount);
+        TestEqual(TEXT("The vehicle definition references every directional sprite"),
+            VehicleDefinition->DirectionalSprites.Num(), VehicleItem.DirectionCount);
+        TestTrue(TEXT("The vehicle definition preserves the source cell dimensions"),
+            VehicleDefinition->SpriteCellSize == FIntPoint(VehicleItem.CellWidth, VehicleItem.CellHeight));
+        for (int32 DirectionIndex = 0; DirectionIndex < VehicleItem.DirectionCount; ++DirectionIndex)
+        {
+            const FString SpriteName = FString::Printf(TEXT("%s_Direction_%02d"), *VehiclePaths.AssetName, DirectionIndex);
+            const FString SpritePath = FString::Printf(TEXT("%s/%s.%s"), *VehiclePaths.PackagePath, *SpriteName, *SpriteName);
+            UPaperSprite* DirectionSprite = LoadObject<UPaperSprite>(nullptr, *SpritePath);
+            if (!TestNotNull(*FString::Printf(TEXT("Vehicle direction %d resolves"), DirectionIndex), DirectionSprite))
+            {
+                return false;
+            }
+            TestTrue(*FString::Printf(TEXT("Vehicle direction %d references the imported sheet"), DirectionIndex),
+                DirectionSprite->GetSourceTexture() == VehicleTexture);
+            TestTrue(*FString::Printf(TEXT("Vehicle definition direction %d is populated"), DirectionIndex),
+                VehicleDefinition->DirectionalSprites[DirectionIndex] == DirectionSprite);
+        }
+
+        FString VehicleReimportObjectPath;
+        FString VehicleReimportSummary;
+        FString VehicleReimportError;
+        int32 VehicleReimportGeneratedAssetCount = 0;
+        if (!TestTrue(TEXT("Reimports the isolated Bologna Superbike sprite sheet"),
+                ImportPixelArtAssets(
+                    VehicleItem,
+                    VehicleReimportObjectPath,
+                    VehicleReimportGeneratedAssetCount,
+                    VehicleReimportSummary,
+                    VehicleReimportError)))
+        {
+            AddError(VehicleReimportError);
+            return false;
+        }
+        TestEqual(TEXT("Vehicle reimport keeps the texture object path"), VehicleReimportObjectPath, VehicleObjectPath);
+        TestEqual(TEXT("Vehicle reimport preserves the generated output count"),
+            VehicleReimportGeneratedAssetCount, VehicleGeneratedAssetCount);
+        UPixelRacerVehicleDefinition* ReimportedVehicleDefinition = LoadObject<UPixelRacerVehicleDefinition>(
+            nullptr, *VehiclePaths.VehicleDefinitionObjectPath);
+        if (!TestNotNull(TEXT("Vehicle definition remains resolvable after reimport"), ReimportedVehicleDefinition))
+        {
+            return false;
+        }
+        TestEqual(TEXT("Vehicle reimport retains all directional references"),
+            ReimportedVehicleDefinition->DirectionalSprites.Num(),
+            VehicleItem.DirectionCount);
+
+        FPixelRacerAssetBrowserItem VfxItem;
+        VfxItem.PackId = TestPackId;
+        VfxItem.AssetId = TEXT("automation_smoke_vfx_smoke");
+        VfxItem.DisplayName = TEXT("Smoke sheet smoke test");
+        VfxItem.RelativePath = VfxRelativePath;
+        VfxItem.SourceRoot = TestSourceRoot;
+        VfxItem.Role = TEXT("vfx_sheet");
+        VfxItem.Width = VfxDimensions.X;
+        VfxItem.Height = VfxDimensions.Y;
+        VfxItem.FrameWidth = 64;
+        VfxItem.FrameHeight = 64;
+        VfxItem.FrameColumns = 3;
+        VfxItem.FrameRows = 5;
+        VfxItem.FrameCount = 15;
+
+        FImportedAssetPaths VfxPaths;
+        FString VfxPathsError;
+        if (!TestTrue(TEXT("Builds the isolated VFX output paths"),
+                BuildImportedAssetPaths(VfxItem, VfxPaths, VfxPathsError)))
+        {
+            AddError(VfxPathsError);
+            return false;
+        }
+
+        FString VfxObjectPath;
+        FString VfxImportSummary;
+        FString VfxImportError;
+        int32 VfxGeneratedAssetCount = 0;
+        if (!TestTrue(TEXT("Imports the isolated WheelsInPixels smoke VFX sheet"),
+                ImportPixelArtAssets(VfxItem, VfxObjectPath, VfxGeneratedAssetCount, VfxImportSummary, VfxImportError)))
+        {
+            AddError(VfxImportError);
+            return false;
+        }
+        TestEqual(TEXT("The VFX import reports its texture object path"), VfxObjectPath, VfxPaths.TextureObjectPath);
+        TestEqual(TEXT("VFX import creates every frame sprite"), VfxGeneratedAssetCount, VfxItem.FrameCount);
+        UTexture2D* VfxTexture = LoadObject<UTexture2D>(nullptr, *VfxObjectPath);
+        if (!TestNotNull(TEXT("The VFX texture object path resolves"), VfxTexture))
+        {
+            return false;
+        }
+        for (int32 FrameIndex = 0; FrameIndex < VfxItem.FrameCount; ++FrameIndex)
+        {
+            const FString SpriteName = FString::Printf(TEXT("%s_Frame_%03d"), *VfxPaths.AssetName, FrameIndex);
+            const FString SpritePath = FString::Printf(TEXT("%s/%s.%s"), *VfxPaths.PackagePath, *SpriteName, *SpriteName);
+            UPaperSprite* FrameSprite = LoadObject<UPaperSprite>(nullptr, *SpritePath);
+            if (!TestNotNull(*FString::Printf(TEXT("VFX frame %d resolves"), FrameIndex), FrameSprite))
+            {
+                return false;
+            }
+            TestTrue(*FString::Printf(TEXT("VFX frame %d references the imported sheet"), FrameIndex),
+                FrameSprite->GetSourceTexture() == VfxTexture);
+        }
+
+        FString VfxReimportObjectPath;
+        FString VfxReimportSummary;
+        FString VfxReimportError;
+        int32 VfxReimportGeneratedAssetCount = 0;
+        if (!TestTrue(TEXT("Reimports the isolated WheelsInPixels smoke VFX sheet"),
+                ImportPixelArtAssets(VfxItem, VfxReimportObjectPath, VfxReimportGeneratedAssetCount,
+                    VfxReimportSummary, VfxReimportError)))
+        {
+            AddError(VfxReimportError);
+            return false;
+        }
+        TestEqual(TEXT("VFX reimport keeps the texture object path"), VfxReimportObjectPath, VfxObjectPath);
+        TestEqual(TEXT("VFX reimport preserves the generated output count"),
+            VfxReimportGeneratedAssetCount, VfxGeneratedAssetCount);
+        VfxTexture = LoadObject<UTexture2D>(nullptr, *VfxReimportObjectPath);
+        if (!TestNotNull(TEXT("The reimported VFX texture remains resolvable"), VfxTexture))
+        {
+            return false;
+        }
+        TArray<FGeneratedAssetRecord> VfxInventory;
+        FString VfxInventoryError;
+        TestTrue(TEXT("VFX reimport saves a valid ownership inventory"),
+            ReadGeneratedAssetInventory(VfxTexture, TestPackId + TEXT(":") + VfxRelativePath,
+                VfxInventory, VfxInventoryError) == EGeneratedInventoryState::Valid);
+        TestEqual(TEXT("VFX ownership inventory contains the texture and all frame sprites"),
+            VfxInventory.Num(), VfxItem.FrameCount + 1);
+        TestTrue(TEXT("VFX ownership inventory retains the final frame"),
+            HasInventoryRecord(VfxInventory, FString::Printf(TEXT("%s/%s_Frame_014.%s_Frame_014"),
+                *VfxPaths.PackagePath, *VfxPaths.AssetName, *VfxPaths.AssetName)));
+
+        return true;
+    }
+#endif
 }
 
 class SPixelRacerAssetRow final : public STableRow<TSharedPtr<FPixelRacerAssetBrowserItem>>
